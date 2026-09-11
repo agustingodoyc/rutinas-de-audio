@@ -8,11 +8,10 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node tests/armado.test.mjs",
+    "test": "node tests/armado.test.mjs && node tests/fusion.test.mjs",
     "imagenes": "node scripts/descargar-imagenes.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.116.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

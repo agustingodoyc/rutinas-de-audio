@@ -9,7 +9,8 @@ import {
   leerTodo,
 } from "./almacen";
 import type { Paquete } from "./intercambio";
-import { bajarBiblioteca, fusionar, subirEjercicio, subirRutina } from "./nube";
+import { bajarBiblioteca, subirEjercicio, subirRutina } from "./nube";
+import { fusionar } from "./fusion";
 
 /** Pisa el elemento con el mismo id, o lo agrega al final. */
 function reemplazar<T extends { id: string }>(lista: T[], valor: T): T[] {

@@ -2,7 +2,10 @@ import type { Ejercicio, ItemRutina, Rutina } from "../tipos";
 import { supabase } from "./supabase";
 
 /**
- * La biblioteca en Supabase: bajar, subir y fusionar.
+ * La biblioteca en Supabase: bajar y subir.
+ *
+ * La lógica de fusión vive aparte, en `fusion.ts`, sin dependencias: así se
+ * puede probar sin red ni navegador.
  *
  * La regla de todo este archivo: **IndexedDB manda**. La app funciona sin
  * cuenta y sin internet, así que la nube es una copia, no la fuente de verdad.
@@ -134,46 +137,6 @@ export async function subirRutina(usuarioId: string, rutina: Rutina): Promise<vo
     })),
   });
   if (error) throw new Error(error.message);
-}
-
-type ConMarca = { id: string; actualizado?: number };
-
-/**
- * Fusiona dos listas por id quedándose con la versión más nueva de cada una.
- *
- * Es la estrategia "gana el último que escribió" (*last write wins*). No es
- * perfecta: si editás la misma rutina en dos dispositivos sin conectarte, la
- * más vieja se pierde en silencio. Resolverlo de verdad exige guardar el
- * historial de cambios de cada campo —lo que hacen las bases distribuidas— y
- * para una biblioteca de rutinas personales el costo no se justifica. Lo que
- * sí importa es que el criterio sea explícito y predecible.
- *
- * Devuelve además qué quedó pendiente de subir: lo que ganó localmente.
- */
-export function fusionar<T extends ConMarca>(
-  locales: T[],
-  remotos: T[]
-): { fusionados: T[]; aSubir: T[] } {
-  const porId = new Map<string, T>();
-  const aSubir: T[] = [];
-
-  for (const remoto of remotos) porId.set(remoto.id, remoto);
-
-  for (const local of locales) {
-    const remoto = porId.get(local.id);
-    if (!remoto) {
-      // Está sólo acá: la nube todavía no lo conoce.
-      porId.set(local.id, local);
-      aSubir.push(local);
-      continue;
-    }
-    if ((local.actualizado ?? 0) > (remoto.actualizado ?? 0)) {
-      porId.set(local.id, local);
-      aSubir.push(local);
-    }
-  }
-
-  return { fusionados: [...porId.values()], aSubir };
 }
 
 /* ────────────────────────────────────────────────────────────────

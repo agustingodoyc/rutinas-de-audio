@@ -6,7 +6,9 @@ Lo particular es dónde corre: **no hay servidor**. La red neuronal que sintetiz
 
 Es la versión web de [audios-de-entrenamiento](https://github.com/agustingodoyc/audios-de-entrenamiento), un script de Python que hacía lo mismo desde la terminal.
 
-![La app: catálogo de rutinas, detalle y generación](capturas/app.png)
+![El catálogo de rutinas](capturas/app.png)
+
+**En línea:** <https://rutinas-de-audio.agustin-godoy-cosser.workers.dev>
 
 ## Arrancar
 
@@ -18,7 +20,7 @@ npm run dev
 Y abrir la URL que imprime Vite. La primera vez que generes un audio se bajan unos 78 MB (60 del modelo de voz y 18 del pronunciador de espeak-ng); después queda todo cacheado en el navegador.
 
 ```bash
-npm test          # tests del armado de la pista, sin navegador
+npm test          # tests del armado de la pista y de la fusión, sin navegador
 npm run build     # typecheck + build de producción
 npm run imagenes  # baja las fotos de los ejercicios (una sola vez)
 ```
@@ -89,6 +91,7 @@ src/
     intercambio.ts     Importar/exportar en el formato de Python
     useBiblioteca.ts   Catálogo + lo que cargó el usuario
     fotos.ts           Ruta de cada foto y color por grupo
+    fusion.ts          Qué versión gana al sincronizar. Sin dependencias
     supabase.ts        El cliente, o null si no está configurado
     useSesion.ts       Login con Google y sesión
     nube.ts            Bajar, subir y fusionar contra Supabase
@@ -101,7 +104,7 @@ supabase/
   migracion-01-…       Cambios al modelo, aplicados en orden
 ejemplos/              JSON de muestra para probar la importación
 capturas/              Imágenes de este README
-tests/armado.test.mjs  Tests del motor, corren en node
+tests/                 Tests del motor y de la fusión, corren en node
 ```
 
 ## Las dos pantallas
@@ -150,6 +153,12 @@ pierde: ya está guardado acá y se sube en la próxima fusión.
 - **Borrar no borra.** Deja una *lápida*: la fila sobrevive marcada como
   borrada, con su fecha. Sin eso, borrar una rutina en el celular y sincronizar
   después desde la compu —que todavía la tiene— la haría reaparecer sola.
+- **La lógica de fusión no importa nada.** Vive sola en `datos/fusion.ts`,
+  separada del acceso a la red: entra la lista local y la remota, sale el
+  resultado. Por eso se prueba con node en milisegundos y sin simular Supabase
+  —un test con mocks termina probando los mocks— y por eso los casos feos
+  (empate de fechas, una versión sin fecha, una lápida más nueva que una
+  edición) están cubiertos en `tests/fusion.test.mjs`.
 - **Guardar una rutina es una transacción.** Son tres operaciones (la rutina,
   borrar sus pasos viejos, insertar los nuevos). Desde el navegador serían tres
   pedidos sueltos y un corte a la mitad dejaría una rutina sin ejercicios. Van
@@ -174,7 +183,10 @@ pierde: ya está guardado acá y se sube en la próxima fusión.
 
 El catálogo que trae la app es de sólo lectura. Aparte de eso podés armar tus propias rutinas y cargar tus propios ejercicios: viven en **IndexedDB**, en tu navegador, y no salen de ahí. No hay cuentas ni servidor donde guardarlas.
 
-![El editor de rutinas](capturas/editor.png)
+![Una rutina, con el texto de cada ejercicio desplegado](capturas/rutina.png)
+
+*Cada fila se despliega y muestra lo que la voz va a leer: es la única forma de
+saber qué dice un ejercicio sin generar el MP3 entero y escucharlo.*
 
 Los botones de **Importar** y **Exportar** hablan el formato exacto de [audios-de-entrenamiento](https://github.com/agustingodoyc/audios-de-entrenamiento), el proyecto de Python:
 
