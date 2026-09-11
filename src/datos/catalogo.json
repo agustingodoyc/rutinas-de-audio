@@ -1,0 +1,139 @@
+{
+  "_nota": "Ejercicios e instrucciones escritos para este proyecto. No provienen de ninguna aplicación de terceros. Ver README para las fuentes abiertas con las que ampliar el catálogo.",
+  "ejercicios": [
+    {
+      "id": "circulos-hombros",
+      "nombre": "Círculos de hombros",
+      "grupo": "Movilidad",
+      "instrucciones": "INSTRUCCIONES: Parate con los pies separados al ancho de las caderas y los brazos relajados a los costados. Dibujá círculos amplios con los hombros hacia atrás, de forma lenta y continua. CONSEJOS: Mantené la mandíbula suelta y respirá de forma pareja durante todo el movimiento."
+    },
+    {
+      "id": "rotacion-cadera",
+      "nombre": "Rotación de cadera",
+      "grupo": "Movilidad",
+      "instrucciones": "INSTRUCCIONES: Con los pies un poco más abiertos que los hombros, apoyá las manos en la cintura y dibujá círculos grandes con la cadera. Cambiá de sentido a la mitad del tiempo. CONSEJOS: Los pies quedan fijos en el piso y las rodillas apenas flexionadas."
+    },
+    {
+      "id": "gato-vaca",
+      "nombre": "Gato y vaca",
+      "grupo": "Movilidad",
+      "instrucciones": "INSTRUCCIONES: En cuatro apoyos, con las manos bajo los hombros y las rodillas bajo la cadera, alterná entre redondear la espalda hacia el techo y hundirla llevando el pecho adelante. CONSEJOS: Acompañá con la respiración: exhalás al redondear, inhalás al abrir el pecho."
+    },
+    {
+      "id": "balanceo-piernas",
+      "nombre": "Balanceo de piernas",
+      "grupo": "Movilidad",
+      "cambioLado": true,
+      "instrucciones": "INSTRUCCIONES: Apoyate con una mano en una pared y balanceá la pierna libre hacia adelante y hacia atrás, con el movimiento suelto y controlado. CONSEJOS: El torso se mantiene erguido; el impulso sale de la cadera, no de la espalda."
+    },
+    {
+      "id": "rotacion-tobillos",
+      "nombre": "Rotación de tobillos",
+      "grupo": "Movilidad",
+      "cambioLado": true,
+      "instrucciones": "INSTRUCCIONES: Apoyá la punta de un pie en el piso y girá el tobillo describiendo círculos amplios, primero en un sentido y después en el otro. CONSEJOS: Buscá el recorrido completo de la articulación sin forzar el final del movimiento."
+    },
+    {
+      "id": "sentadilla",
+      "nombre": "Sentadilla",
+      "grupo": "Fuerza",
+      "instrucciones": "INSTRUCCIONES: Con los pies al ancho de los hombros y las puntas apenas hacia afuera, bajá llevando la cadera atrás como si fueras a sentarte, y volvé a subir empujando con los talones. CONSEJOS: El pecho se mantiene alto y las rodillas siguen la dirección de los pies."
+    },
+    {
+      "id": "estocada-estatica",
+      "nombre": "Estocada estática",
+      "grupo": "Fuerza",
+      "cambioLado": true,
+      "instrucciones": "INSTRUCCIONES: Dejá una pierna adelantada y flexioná ambas rodillas hasta formar dos ángulos rectos. Sostené la posición con el torso erguido. CONSEJOS: La rodilla de adelante no pasa la punta del pie y el peso se reparte entre los dos apoyos."
+    },
+    {
+      "id": "flexiones",
+      "nombre": "Flexiones de brazos",
+      "grupo": "Fuerza",
+      "instrucciones": "INSTRUCCIONES: Con las manos un poco más abiertas que los hombros, bajá el pecho hacia el piso manteniendo el cuerpo en línea recta, y empujá para volver a subir. CONSEJOS: Si la serie completa te resulta pesada, apoyá las rodillas y seguí con el mismo ritmo."
+    },
+    {
+      "id": "plancha",
+      "nombre": "Plancha",
+      "grupo": "Fuerza",
+      "instrucciones": "INSTRUCCIONES: Apoyá los antebrazos en el piso con los codos debajo de los hombros y sostené el cuerpo en línea recta desde la cabeza hasta los talones. CONSEJOS: Apretá el abdomen y los glúteos para que la cadera no se hunda ni se levante."
+    },
+    {
+      "id": "puente-gluteos",
+      "nombre": "Puente de glúteos",
+      "grupo": "Fuerza",
+      "instrucciones": "INSTRUCCIONES: Acostado boca arriba con las rodillas flexionadas y los pies apoyados, elevá la cadera hasta formar una línea entre las rodillas y los hombros, y bajá con control. CONSEJOS: El empuje sale de los talones y de los glúteos, no de la zona lumbar."
+    },
+    {
+      "id": "elevacion-talones",
+      "nombre": "Elevación de talones",
+      "grupo": "Fuerza",
+      "instrucciones": "INSTRUCCIONES: Parado con los pies al ancho de la cadera, elevá los talones hasta quedar en puntas de pie y bajá despacio hasta apoyar. CONSEJOS: Si te cuesta mantener el equilibrio, apoyá los dedos de una mano en una pared."
+    },
+    {
+      "id": "isquiotibiales",
+      "nombre": "Estiramiento de isquiotibiales",
+      "grupo": "Elongación",
+      "cambioLado": true,
+      "instrucciones": "INSTRUCCIONES: Sentado en el piso, estirá una pierna y flexioná la otra apoyando la planta contra el muslo. Llevá el torso hacia la pierna estirada hasta sentir tensión suave detrás del muslo. CONSEJOS: Buscá tensión, nunca dolor, y sostené sin rebotes."
+    },
+    {
+      "id": "postura-nino",
+      "nombre": "Postura del niño",
+      "grupo": "Elongación",
+      "instrucciones": "INSTRUCCIONES: Arrodillado, sentate sobre los talones y llevá el torso hacia adelante hasta apoyar la frente en el piso, con los brazos estirados. CONSEJOS: Si te molestan las rodillas, separalas un poco más y dejá caer el peso entre ellas."
+    },
+    {
+      "id": "cuadriceps",
+      "nombre": "Estiramiento de cuádriceps",
+      "grupo": "Elongación",
+      "cambioLado": true,
+      "instrucciones": "INSTRUCCIONES: Parado, tomá el empeine de un pie y llevalo hacia el glúteo manteniendo las rodillas juntas. CONSEJOS: Llevá la cadera apenas hacia adelante para que el estiramiento llegue a la parte alta del muslo."
+    },
+    {
+      "id": "pectorales-pared",
+      "nombre": "Apertura de pecho en pared",
+      "grupo": "Elongación",
+      "cambioLado": true,
+      "instrucciones": "INSTRUCCIONES: Apoyá el antebrazo contra el marco de una puerta o una pared, con el codo a la altura del hombro, y girá el torso hacia el lado contrario. CONSEJOS: El hombro se mantiene bajo, lejos de la oreja, durante todo el estiramiento."
+    }
+  ],
+  "rutinas": [
+    {
+      "id": "movilidad-matinal",
+      "nombre": "Movilidad matinal",
+      "descripcion": "Cinco minutos para despertar las articulaciones antes de arrancar el día.",
+      "ejercicios": [
+        { "id": "circulos-hombros", "seg": 40 },
+        { "id": "rotacion-cadera", "seg": 40 },
+        { "id": "gato-vaca", "seg": 50 },
+        { "id": "balanceo-piernas", "seg": 40 },
+        { "id": "rotacion-tobillos", "seg": 40 }
+      ]
+    },
+    {
+      "id": "fuerza-sin-equipo",
+      "nombre": "Fuerza sin equipo",
+      "descripcion": "Cuerpo completo con el propio peso, sin nada más que el piso.",
+      "ejercicios": [
+        { "id": "sentadilla", "seg": 45 },
+        { "id": "flexiones", "seg": 40 },
+        { "id": "estocada-estatica", "seg": 60 },
+        { "id": "puente-gluteos", "seg": 45 },
+        { "id": "plancha", "seg": 40 },
+        { "id": "elevacion-talones", "seg": 40 }
+      ]
+    },
+    {
+      "id": "elongacion-de-la-noche",
+      "nombre": "Elongación de la noche",
+      "descripcion": "Estiramientos largos y sostenidos para cerrar el día.",
+      "ejercicios": [
+        { "id": "cuadriceps", "seg": 60 },
+        { "id": "isquiotibiales", "seg": 60 },
+        { "id": "pectorales-pared", "seg": 60 },
+        { "id": "postura-nino", "seg": 50 }
+      ]
+    }
+  ]
+}

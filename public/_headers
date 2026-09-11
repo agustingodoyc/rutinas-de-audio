@@ -1,0 +1,10 @@
+# Cloudflare Pages lee este archivo. En Vercel el equivalente va en vercel.json.
+#
+# Sin estos dos headers no hay SharedArrayBuffer, y sin SharedArrayBuffer
+# ONNX Runtime corre en un solo hilo: la app funciona igual pero la síntesis
+# se vuelve varias veces más lenta. Es la razón por la que este proyecto no
+# se hospeda en GitHub Pages, que no deja configurar headers.
+
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless

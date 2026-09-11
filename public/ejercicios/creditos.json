@@ -1,0 +1,72 @@
+{
+  "fuente": "free-exercise-db",
+  "licencia": "Unlicense (dominio público)",
+  "repositorio": "https://github.com/yuhonas/free-exercise-db",
+  "ejercicios": {
+    "circulos-hombros": {
+      "nombre": "Arm Circles",
+      "id": "Arm_Circles",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Arm_Circles/0.jpg"
+    },
+    "rotacion-cadera": {
+      "nombre": "Standing Hip Circles",
+      "id": "Standing_Hip_Circles",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Hip_Circles/0.jpg"
+    },
+    "gato-vaca": {
+      "nombre": "Cat Stretch",
+      "id": "Cat_Stretch",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/0.jpg"
+    },
+    "rotacion-tobillos": {
+      "nombre": "Ankle Circles",
+      "id": "Ankle_Circles",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ankle_Circles/0.jpg"
+    },
+    "sentadilla": {
+      "nombre": "Bodyweight Squat",
+      "id": "Bodyweight_Squat",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/0.jpg"
+    },
+    "estocada-estatica": {
+      "nombre": "Barbell Lunge",
+      "id": "Barbell_Lunge",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Lunge/0.jpg"
+    },
+    "flexiones": {
+      "nombre": "Pushups",
+      "id": "Pushups",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg"
+    },
+    "plancha": {
+      "nombre": "Plank",
+      "id": "Plank",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg"
+    },
+    "puente-gluteos": {
+      "nombre": "Butt Lift (Bridge)",
+      "id": "Butt_Lift_Bridge",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butt_Lift_Bridge/0.jpg"
+    },
+    "elevacion-talones": {
+      "nombre": "Standing Calf Raises",
+      "id": "Standing_Calf_Raises",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg"
+    },
+    "postura-nino": {
+      "nombre": "Child's Pose",
+      "id": "Childs_Pose",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Childs_Pose/0.jpg"
+    },
+    "cuadriceps": {
+      "nombre": "Quad Stretch",
+      "id": "Quad_Stretch",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Quad_Stretch/0.jpg"
+    },
+    "pectorales-pared": {
+      "nombre": "Behind Head Chest Stretch",
+      "id": "Behind_Head_Chest_Stretch",
+      "url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Behind_Head_Chest_Stretch/0.jpg"
+    }
+  }
+}

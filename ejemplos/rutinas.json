@@ -1,0 +1,10 @@
+{
+    "Entrada en calor": [
+        { "nombre": "Marcha en el lugar", "seg": 60, "cambio_lado": false },
+        { "nombre": "Remo con banda elástica", "seg": 40, "cambio_lado": false }
+    ],
+    "Core rápido": [
+        { "nombre": "Plancha lateral", "seg": 40, "cambio_lado": true },
+        { "nombre": "Marcha en el lugar", "seg": 30, "cambio_lado": false }
+    ]
+}

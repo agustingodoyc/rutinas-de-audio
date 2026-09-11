@@ -1,0 +1,254 @@
+import { useMemo, useState } from "react";
+import type { Ejercicio, Rutina } from "./tipos";
+import { idEjercicioPropio, idRutinaPropia, resolver, slug } from "./datos/catalogo";
+import { useBiblioteca } from "./datos/useBiblioteca";
+import { useGenerador } from "./audio/useGenerador";
+import { BarraSuperior } from "./componentes/BarraSuperior";
+import { ListaRutinas } from "./componentes/ListaRutinas";
+import { DetalleRutina } from "./componentes/DetalleRutina";
+import { EditorRutina } from "./componentes/EditorRutina";
+import { PanelVoz } from "./componentes/PanelVoz";
+import { PanelGeneracion } from "./componentes/PanelGeneracion";
+import { BarraDatos } from "./componentes/BarraDatos";
+import { MisEjercicios } from "./componentes/MisEjercicios";
+import { PanelEjemplo } from "./componentes/PanelEjemplo";
+import { useEjemplos } from "./datos/useEjemplos";
+import { useSesion } from "./datos/useSesion";
+import { useComunidad } from "./datos/useComunidad";
+import { esDeLaComunidad } from "./datos/nube";
+
+type Modo = { tipo: "ver" } | { tipo: "editar" } | { tipo: "nueva" };
+
+/**
+ * Dos pantallas, no una.
+ *
+ * El catálogo es la portada: rutinas en tarjetas y nada más, porque elegir es
+ * lo primero que hace cualquiera que entra. Todo el aparato —la voz, la
+ * generación, el reproductor— aparece recién cuando ya hay una rutina
+ * elegida, que es cuando significa algo. Antes de eso sólo era ruido
+ * alrededor de una decisión que todavía no se tomó.
+ */
+export default function App() {
+  const sesion = useSesion();
+  // La biblioteca necesita saber quién entró: con sesión, además de guardar en
+  // el navegador, sincroniza con Supabase.
+  const bib = useBiblioteca(sesion.session?.user.id ?? null);
+  const gen = useGenerador();
+  const ejemplos = useEjemplos();
+  const comunidad = useComunidad();
+
+  const [seleccionada, setSeleccionada] = useState("");
+  const [modo, setModo] = useState<Modo>({ tipo: "ver" });
+
+  /* Un solo índice para resolver cualquier rutina: los ejercicios del catálogo,
+     los propios y los que vienen con las rutinas publicadas. */
+  const indice = useMemo(
+    () => new Map<string, Ejercicio>([...bib.indice, ...comunidad.indice]),
+    [bib.indice, comunidad.indice]
+  );
+
+  const todas = useMemo(
+    () => [...bib.rutinas, ...comunidad.rutinas],
+    [bib.rutinas, comunidad.rutinas]
+  );
+
+  const rutina: Rutina | undefined = useMemo(
+    () => todas.find((r) => r.id === seleccionada),
+    [todas, seleccionada]
+  );
+
+  const items = useMemo(() => (rutina ? resolver(rutina, indice) : []), [rutina, indice]);
+
+  const elegir = (id: string) => {
+    setSeleccionada(id);
+    setModo({ tipo: "ver" });
+    gen.limpiarResultado();
+  };
+
+  const volver = () => {
+    setSeleccionada("");
+    setModo({ tipo: "ver" });
+    gen.limpiarResultado();
+  };
+
+  const guardarRutina = async (nueva: Rutina) => {
+    await bib.guardarRutina(nueva);
+    setSeleccionada(nueva.id);
+    setModo({ tipo: "ver" });
+    gen.limpiarResultado();
+    // Publicar o despublicar cambia lo que ve el resto: hay que releerlo.
+    if (nueva.publica) await comunidad.recargar();
+  };
+
+  /**
+   * Trae una rutina de la comunidad a la biblioteca propia.
+   *
+   * Es una copia de verdad, no un enlace: se duplican también los ejercicios
+   * que trae, con ids propios. Si el autor la borra o la cambia, la tuya sigue
+   * igual — que es lo que espera cualquiera que aprieta "copiar".
+   */
+  const copiarDeComunidad = async (origen: Rutina) => {
+    const equivalencias = new Map<string, string>();
+
+    for (const item of origen.ejercicios) {
+      // Los del catálogo ya los tiene todo el mundo: se dejan como están.
+      if (!esDeLaComunidad(item.id)) continue;
+      const ejercicio = indice.get(item.id);
+      if (!ejercicio) continue;
+
+      const idPropio = idEjercicioPropio(ejercicio.nombre);
+      equivalencias.set(item.id, idPropio);
+      await bib.guardarEjercicio({ ...ejercicio, id: idPropio, propio: true });
+    }
+
+    const copia: Rutina = {
+      id: idRutinaPropia(origen.nombre),
+      nombre: origen.nombre,
+      descripcion: origen.descripcion,
+      ejercicios: origen.ejercicios.map((item) => ({
+        ...item,
+        id: equivalencias.get(item.id) ?? item.id,
+      })),
+      propia: true,
+      publica: false,
+    };
+
+    await bib.guardarRutina(copia);
+    setSeleccionada(copia.id);
+    gen.limpiarResultado();
+  };
+
+  const borrarRutina = (id: string) => {
+    bib.borrarRutina(id);
+    volver();
+  };
+
+  const editando = modo.tipo !== "ver";
+  const enRutina = editando || Boolean(rutina);
+
+  const avisos = (
+    <>
+      {gen.error && (
+        <p className="error" role="alert">
+          {gen.error}
+        </p>
+      )}
+      {bib.error && <p className="error">{bib.error}</p>}
+      {comunidad.error && <p className="error">{comunidad.error}</p>}
+    </>
+  );
+
+  return (
+    <>
+      <BarraSuperior sesion={sesion} sincronizando={bib.sincronizando} />
+
+      <div className="app">
+        {enRutina ? (
+          <main className="vista">
+            <button className="volver" onClick={volver}>
+              ← Catálogo
+            </button>
+
+            {avisos}
+
+            {editando ? (
+              <EditorRutina
+                rutina={modo.tipo === "editar" && rutina ? rutina : null}
+                indice={indice}
+                onGuardar={guardarRutina}
+                onBorrar={borrarRutina}
+                onCancelar={() => (modo.tipo === "nueva" ? volver() : setModo({ tipo: "ver" }))}
+                onGuardarEjercicio={bib.guardarEjercicio}
+                puedePublicar={Boolean(sesion.session)}
+              />
+            ) : rutina ? (
+              <div className="rutina">
+                <div className="rutina-principal">
+                  <DetalleRutina
+                    rutina={rutina}
+                    items={items}
+                    enCurso={gen.progreso?.nombre}
+                    onEditar={rutina.propia ? () => setModo({ tipo: "editar" }) : undefined}
+                    onCopiar={
+                      esDeLaComunidad(rutina.id) ? () => void copiarDeComunidad(rutina) : undefined
+                    }
+                  />
+                </div>
+
+                <aside className="rutina-lateral">
+                  {ejemplos.has(rutina.id) && !gen.resultado && (
+                    <PanelEjemplo rutinaId={rutina.id} nombre={rutina.nombre} />
+                  )}
+
+                  <PanelVoz
+                    fase={gen.fase}
+                    vozCargada={gen.vozCargada}
+                    descarga={gen.descarga}
+                    mensaje={gen.mensaje}
+                    onCargar={gen.cargarVoz}
+                  />
+
+                  <PanelGeneracion
+                    fase={gen.fase}
+                    mensaje={gen.mensaje}
+                    progreso={gen.progreso}
+                    resultado={gen.resultado}
+                    puedeGenerar={items.length > 0}
+                    tituloRutina={rutina.nombre}
+                    onGenerar={() => gen.generar(items, slug(rutina.nombre) || "rutina")}
+                  />
+                </aside>
+              </div>
+            ) : null}
+          </main>
+        ) : (
+          <main className="vista">
+            <section className="hero">
+              <h1>Rutinas de audio</h1>
+              <p className="bajada">
+                Elegí una rutina o armá la tuya, y llevátela como un MP3 guiado por voz para
+                entrenar sin mirar la pantalla. Se genera entero en tu navegador.
+              </p>
+            </section>
+
+            {avisos}
+
+            <ListaRutinas
+              rutinas={bib.rutinas}
+              comunidad={comunidad.rutinas}
+              indice={indice}
+              onSeleccionar={elegir}
+              onNueva={() => setModo({ tipo: "nueva" })}
+            />
+
+            <div className="datos-abajo">
+              <BarraDatos
+                ejerciciosPropios={bib.ejerciciosPropios}
+                rutinasPropias={bib.rutinasPropias}
+                indice={indice}
+                onImportar={bib.importarPaquete}
+              />
+
+              <MisEjercicios
+                ejercicios={bib.ejerciciosPropios}
+                rutinas={bib.rutinasPropias}
+                onGuardar={bib.guardarEjercicio}
+                onBorrar={bib.borrarEjercicio}
+              />
+            </div>
+          </main>
+        )}
+
+        <footer className="pie">
+          <p>
+            La voz corre en tu dispositivo con{" "}
+            <a href="https://github.com/rhasspy/piper" target="_blank" rel="noreferrer">
+              Piper
+            </a>
+            . No hay servidor: ni las rutinas ni el audio salen de tu navegador.
+          </p>
+        </footer>
+      </div>
+    </>
+  );
+}
