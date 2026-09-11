@@ -1,0 +1,21 @@
+{
+  // Cloudflare ya no crea proyectos de Pages desde el panel: lo que arma es un
+  // Worker que sirve archivos estáticos, y lo publica con `npx wrangler deploy`.
+  // Ese comando lee este archivo para saber qué desplegar. Sin él, el build
+  // compila perfecto y el despliegue falla, que es justo lo que pasaba.
+  "name": "rutinas-de-audio",
+  "compatibility_date": "2026-09-01",
+
+  // No hay "main" porque no hay código de servidor: sólo los archivos que deja
+  // Vite en dist/. El `_headers` con COOP/COEP viaja ahí adentro.
+  "assets": {
+    "directory": "./dist",
+
+    // La app es una sola página sin ruteo, así que una dirección que no existe
+    // tiene que devolver un 404 de verdad. Con "single-page-application"
+    // devolvería el index con código 200, y eso rompe la comprobación de los
+    // audios de ejemplo: la app pregunta si el archivo existe antes de mostrar
+    // el reproductor, y un 200 con HTML le haría creer que sí.
+    "not_found_handling": "none"
+  }
+}

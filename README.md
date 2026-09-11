@@ -249,20 +249,27 @@ sonando. El grupo de una rutina es el que más se repite entre sus ejercicios.
 
 ## Publicarla
 
-Se hospeda en **Cloudflare Pages**, y la razón es concreta: `public/_headers`.
-Los headers de cross-origin isolation no son opcionales —sin ellos ONNX corre
-en un solo hilo— y GitHub Pages no deja configurarlos.
+Se hospeda en **Cloudflare**, y la razón es concreta: `public/_headers`. Los
+headers de cross-origin isolation no son opcionales —sin ellos ONNX corre en un
+solo hilo— y GitHub Pages no deja configurarlos.
+
+El panel de Cloudflare ya no crea proyectos de Pages: arma un **Worker que
+sirve archivos estáticos** y lo publica con `npx wrangler deploy`. Ese comando
+necesita `wrangler.jsonc`, que declara el directorio a publicar. Sin ese
+archivo el build compila y el despliegue falla.
 
 | Ajuste | Valor |
 | --- | --- |
 | Build command | `npm run build` |
-| Output directory | `dist` |
-| Variables de entorno | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
+| Build variables | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` |
 
-Las variables hay que cargarlas en Cloudflare: Vite las lee **en el momento de
-compilar**, no cuando alguien abre la página, así que un build sin ellas
-produce una app sin cuentas. Es el error más común al desplegar una app de
-front: pensar que `.env.local` viaja con el proyecto.
+Las variables van en *Settings → Builds → Variables and secrets*, **no** en las
+de runtime. Vite las lee **en el momento de compilar** y las deja escritas
+adentro del JavaScript; una variable de runtime llega cuando el build ya pasó y
+no la ve nadie. Un despliegue sin ellas produce una app sin cuentas y sin
+ningún error visible: el botón de Google simplemente no hace nada.
 
 Después del primer despliegue, en Supabase → *Authentication → URL
 Configuration*:
