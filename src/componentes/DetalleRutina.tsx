@@ -10,7 +10,7 @@ type Props = {
   items: EjercicioResuelto[];
   enCurso?: string;
   onEditar?: () => void;
-  /** Sólo en las rutinas de la comunidad: traerla a la biblioteca propia. */
+  /** Sólo en las rutinas ajenas —catálogo o comunidad—: traerla a la propia. */
   onCopiar?: () => void;
 };
 

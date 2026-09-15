@@ -166,41 +166,59 @@ export async function bajarRutinasPublicas(): Promise<{
 }> {
   if (!supabase) return { rutinas: [], ejercicios: [] };
 
-  const [rutinas, pasos, ejercicios, perfiles] = await Promise.all([
+  const [rutinas, pasos, perfiles] = await Promise.all([
     supabase.from("rutinas").select("*").eq("publica", true).eq("borrado", false),
     supabase.from("rutina_ejercicios").select("*"),
-    supabase.from("ejercicios").select("*").eq("borrado", false),
     supabase.from("perfiles").select("id, nombre"),
   ]);
 
-  const fallo = rutinas.error ?? pasos.error ?? ejercicios.error ?? perfiles.error;
+  const fallo = rutinas.error ?? pasos.error ?? perfiles.error;
   if (fallo) throw new Error(fallo.message);
 
   type ConDueno<T> = T & { usuario_id: string };
 
   const filas = (rutinas.data ?? []) as ConDueno<FilaRutina>[];
-  /* Las otras dos consultas vuelven con lo propio mezclado —las políticas
-     suman permisos— así que se filtra contra las rutinas públicas que sí
-     pedimos. */
+  /* La consulta de pasos vuelve con lo propio mezclado —las políticas suman
+     permisos— así que se filtra contra las rutinas públicas que sí pedimos. */
   const claves = new Set(filas.map((r) => `${r.usuario_id}|${r.id}`));
 
   const nombrePorUsuario = new Map(
     ((perfiles.data ?? []) as { id: string; nombre: string }[]).map((p) => [p.id, p.nombre])
   );
 
-  const ejerciciosPublicos = ((ejercicios.data ?? []) as ConDueno<FilaEjercicio>[]).map((f) => ({
-    id: idPublico(f.usuario_id, f.id),
-    nombre: f.nombre,
-    grupo: f.grupo,
-    cambioLado: f.cambio_lado,
-    instrucciones: f.instrucciones,
-    actualizado: aMs(f.actualizado_en),
-  }));
-
   const porRutina = new Map<string, ItemRutina[]>();
   const pasosOrdenados = ((pasos.data ?? []) as ConDueno<FilaPaso>[])
     .filter((p) => claves.has(`${p.usuario_id}|${p.rutina_id}`))
     .sort((a, b) => a.orden - b.orden);
+
+  /* Recién ahora se sabe qué ejercicios hacen falta, así que la consulta va en
+     una segunda vuelta en vez de en el Promise.all de arriba.
+     Pedir la tabla entera —que es lo que se hacía— traía de yapa la biblioteca
+     propia de quien tuviera sesión abierta, porque la política "ejercicios
+     propios" también da lectura. No se filtraba nada a nadie, pero se bajaba
+     mucho para nada: la mayoría de los pasos apuntan al catálogo, que viaja
+     con la app y ni siquiera está en esta base. */
+  const paresUsados = new Set(pasosOrdenados.map((p) => `${p.usuario_id}|${p.ejercicio_id}`));
+  const idsUsados = [...new Set(pasosOrdenados.map((p) => p.ejercicio_id))];
+
+  const ejercicios = idsUsados.length
+    ? await supabase.from("ejercicios").select("*").eq("borrado", false).in("id", idsUsados)
+    : { data: [] as ConDueno<FilaEjercicio>[], error: null };
+  if (ejercicios.error) throw new Error(ejercicios.error.message);
+
+  /* El `in` filtra por id, que sólo es único dentro de una persona: si alguien
+     publica una rutina con un ejercicio que se llama igual que uno tuyo, vuelve
+     también el tuyo. El par (dueño, id) es la identidad de verdad. */
+  const ejerciciosPublicos = ((ejercicios.data ?? []) as ConDueno<FilaEjercicio>[])
+    .filter((f) => paresUsados.has(`${f.usuario_id}|${f.id}`))
+    .map((f) => ({
+      id: idPublico(f.usuario_id, f.id),
+      nombre: f.nombre,
+      grupo: f.grupo,
+      cambioLado: f.cambio_lado,
+      instrucciones: f.instrucciones,
+      actualizado: aMs(f.actualizado_en),
+    }));
 
   const idsPublicos = new Set(ejerciciosPublicos.map((e) => e.id));
 

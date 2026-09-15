@@ -30,7 +30,10 @@ const esObjeto = (v: unknown): v is Record<string, unknown> =>
 /* ── Importar ──────────────────────────────────────────────────── */
 
 export function leerEjercicios(crudo: unknown): Ejercicio[] {
-  if (!esObjeto(crudo)) throw new Error("ejercicios.json tiene que ser un objeto.");
+  if (!esObjeto(crudo))
+    throw new Error(
+      'Esperaba ejercicios con la forma { "Nombre del ejercicio": "INSTRUCCIONES: …" }.'
+    );
 
   const salida: Ejercicio[] = [];
   for (const [nombre, instrucciones] of Object.entries(crudo as EjerciciosPython)) {
@@ -47,7 +50,10 @@ export function leerEjercicios(crudo: unknown): Ejercicio[] {
 }
 
 export function leerRutinas(crudo: unknown): { rutinas: Rutina[]; ladosPorId: Set<string> } {
-  if (!esObjeto(crudo)) throw new Error("rutinas.json tiene que ser un objeto.");
+  if (!esObjeto(crudo))
+    throw new Error(
+      'Esperaba rutinas con la forma { "Nombre de la rutina": [ { "nombre": "…", "seg": 30 } ] }.'
+    );
 
   const rutinas: Rutina[] = [];
   const ladosPorId = new Set<string>();
@@ -85,6 +91,19 @@ export function importar(archivos: unknown[]): Paquete {
     const conClaves = archivo as { ejercicios?: unknown; rutinas?: unknown };
     const fuenteEjercicios = conClaves.ejercicios ?? null;
     const fuenteRutinas = conClaves.rutinas ?? null;
+
+    /* `src/datos/catalogo.json` usa esas dos mismas claves, pero con listas
+       adentro en vez de objetos. Sin este chequeo caía en la rama de abajo y
+       moría con un "tiene que ser un objeto" hablando del archivo entero, que
+       sí era un objeto: lo que no lo era estaba un nivel más adentro.
+       Un mensaje de error que describe mal lo que pasó cuesta más que no
+       tenerlo. Y acá, además, no hay nada que importar. */
+    if (Array.isArray(fuenteEjercicios) || Array.isArray(fuenteRutinas)) {
+      throw new Error(
+        "Ese es el catálogo interno de la app: ya viene cargado, no hace falta importarlo. " +
+          "Si querés una de sus rutinas para editarla o publicarla, abrila y usá «Copiar a mis rutinas»."
+      );
+    }
 
     if (fuenteEjercicios || fuenteRutinas) {
       if (fuenteEjercicios) ejercicios = ejercicios.concat(leerEjercicios(fuenteEjercicios));

@@ -134,6 +134,58 @@
         { "id": "pectorales-pared", "seg": 60 },
         { "id": "postura-nino", "seg": 50 }
       ]
+    },
+    {
+      "id": "antes-de-la-carrera",
+      "nombre": "Antes de la carrera",
+      "descripcion": "Entrada en calor de pie: articulaciones sueltas y piernas activadas antes de salir a correr.",
+      "ejercicios": [
+        { "id": "rotacion-tobillos", "seg": 30 },
+        { "id": "balanceo-piernas", "seg": 40 },
+        { "id": "rotacion-cadera", "seg": 40 },
+        { "id": "sentadilla", "seg": 40 },
+        { "id": "estocada-estatica", "seg": 50 },
+        { "id": "elevacion-talones", "seg": 35 }
+      ]
+    },
+    {
+      "id": "tren-inferior",
+      "nombre": "Tren inferior",
+      "descripcion": "Piernas y glúteos con el propio peso, y elongación al final para cerrar.",
+      "ejercicios": [
+        { "id": "sentadilla", "seg": 45 },
+        { "id": "estocada-estatica", "seg": 60 },
+        { "id": "puente-gluteos", "seg": 45 },
+        { "id": "elevacion-talones", "seg": 40 },
+        { "id": "cuadriceps", "seg": 60 },
+        { "id": "isquiotibiales", "seg": 60 }
+      ]
+    },
+    {
+      "id": "cadera-y-espalda-baja",
+      "nombre": "Cadera y espalda baja",
+      "descripcion": "Movilidad de columna y cadera para aflojar la zona lumbar después de estar mucho tiempo sentado.",
+      "ejercicios": [
+        { "id": "gato-vaca", "seg": 50 },
+        { "id": "puente-gluteos", "seg": 45 },
+        { "id": "rotacion-cadera", "seg": 40 },
+        { "id": "isquiotibiales", "seg": 60 },
+        { "id": "cuadriceps", "seg": 60 },
+        { "id": "postura-nino", "seg": 50 }
+      ]
+    },
+    {
+      "id": "pausa-de-escritorio",
+      "nombre": "Pausa de escritorio",
+      "descripcion": "Pausa corta para el cuerpo entero sin equipo, pensada para cortar una jornada larga de trabajo.",
+      "ejercicios": [
+        { "id": "circulos-hombros", "seg": 40 },
+        { "id": "pectorales-pared", "seg": 60 },
+        { "id": "gato-vaca", "seg": 50 },
+        { "id": "rotacion-cadera", "seg": 40 },
+        { "id": "sentadilla", "seg": 35 },
+        { "id": "postura-nino", "seg": 45 }
+      ]
     }
   ]
 }

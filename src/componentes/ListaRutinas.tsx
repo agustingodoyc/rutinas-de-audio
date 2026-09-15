@@ -50,7 +50,7 @@ export function ListaRutinas({ rutinas, comunidad, indice, onSeleccionar, onNuev
       <section className="galeria" aria-labelledby="titulo-catalogo">
         <div className="galeria-cabeza">
           <h2 id="titulo-catalogo">Catálogo</h2>
-          <p className="apunte">Listas para escuchar. Vienen con la app.</p>
+          <p className="apunte">Listas para escuchar. Copiala si querés cambiarle algo.</p>
         </div>
         <ul className="grilla">{catalogo.map(tarjeta)}</ul>
       </section>

@@ -43,6 +43,11 @@ Cada ejercicio se arma como tres bloques concatenados:
 
 Si el ejercicio tiene `cambioLado`, a la mitad exacta del bloque de ejecución se inserta un aviso de 2 s.
 
+El motor salió de un *spike*: una página desechable que validó que todo esto
+era posible en un navegador antes de escribir la app. Lo que se aprendió ahí
+—incluida la razón por la que este proyecto no puede vivir en GitHub Pages—
+está en [`docs/spike.md`](docs/spike.md).
+
 ### Lo que hay que saber antes de tocar el motor
 
 Está todo en `public/audio-worker.js`, y vive fuera del build de Vite a propósito: `importScripts` necesita archivos servidos tal cual. Cuatro cosas que se descubrieron midiendo y que no son evidentes leyendo el código:
@@ -99,6 +104,7 @@ src/
   componentes/         UI
 scripts/
   descargar-imagenes.mjs  Trae las fotos de free-exercise-db
+docs/spike.md          Qué se validó antes de escribir la app
 supabase/
   esquema.sql          Tablas, trigger de perfiles y políticas RLS
   migracion-01-…       Cambios al modelo, aplicados en orden
@@ -181,7 +187,7 @@ pierde: ya está guardado acá y se sube en la próxima fusión.
 
 ## Tu biblioteca
 
-El catálogo que trae la app es de sólo lectura. Aparte de eso podés armar tus propias rutinas y cargar tus propios ejercicios: viven en **IndexedDB**, en tu navegador, y no salen de ahí. No hay cuentas ni servidor donde guardarlas.
+El catálogo que trae la app es de sólo lectura, pero cualquiera de sus rutinas se puede **copiar** a la biblioteca propia para cambiarle los tiempos, el orden o publicarla. La copia sigue apuntando a los ejercicios del catálogo en vez de duplicarlos, así que publicarla sube la secuencia y nada más. Aparte de eso podés armar tus propias rutinas y cargar tus propios ejercicios: viven en **IndexedDB**, en tu navegador, y no salen de ahí. No hay cuentas ni servidor donde guardarlas.
 
 ![Una rutina, con el texto de cada ejercicio desplegado](capturas/rutina.png)
 
@@ -223,15 +229,15 @@ La primera generación real exige bajar unos 78 MB. Alguien que entra sólo a ve
 
 Generarlas es un paso manual, una vez:
 
-1. Abrí la app, cargá la voz y generá las tres rutinas del catálogo.
+1. Abrí la app, cargá la voz y generá las rutinas del catálogo.
 2. El archivo que se descarga ya se llama como corresponde — el id de cada rutina del catálogo es el slug de su nombre, justamente para que coincida.
 3. Movelos a `public/ejemplos/`:
 
 ```bash
-mv ~/Descargas/{movilidad-matinal,fuerza-sin-equipo,elongacion-de-la-noche}.mp3 public/ejemplos/
+mv ~/Descargas/{movilidad-matinal,fuerza-sin-equipo,elongacion-de-la-noche,antes-de-la-carrera,tren-inferior,cadera-y-espalda-baja,pausa-de-escritorio}.mp3 public/ejemplos/
 ```
 
-`public/ejemplos/indice.json` ya lista las tres. Cada una se enciende sola el día que su MP3 aparece: antes de mostrar el reproductor, la app verifica que el archivo exista de verdad. No alcanza con escuchar el evento `error` del `<audio>` — cuando el archivo falta, tanto el servidor de desarrollo como un hosting con fallback a `index.html` devuelven 200 con HTML, y el reproductor se queda cargando para siempre sin avisar. Por eso se mira el `content-type`.
+`public/ejemplos/indice.json` ya las lista a todas. Cada una se enciende sola el día que su MP3 aparece: antes de mostrar el reproductor, la app verifica que el archivo exista de verdad. No alcanza con escuchar el evento `error` del `<audio>` — cuando el archivo falta, tanto el servidor de desarrollo como un hosting con fallback a `index.html` devuelven 200 con HTML, y el reproductor se queda cargando para siempre sin avisar. Por eso se mira el `content-type`.
 
 ## Las fotos de los ejercicios
 

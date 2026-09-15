@@ -1,6 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Ejercicio, ItemRutina, Rutina } from "../tipos";
-import { duracionEstimada, idEjercicioPropio, idRutinaPropia, mmss, resolver } from "../datos/catalogo";
+import {
+  duracionEstimada,
+  esEjercicioPropio,
+  idEjercicioPropio,
+  idRutinaPropia,
+  mmss,
+  resolver,
+} from "../datos/catalogo";
 import { FormularioEjercicio } from "./FormularioEjercicio";
 
 type Props = {
@@ -33,6 +40,7 @@ export function EditorRutina({
   const [creandoEjercicio, setCreandoEjercicio] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
+  const [confirmandoPublicacion, setConfirmandoPublicacion] = useState(false);
 
   /** Agrupados para que el selector no sea una lista plana de cincuenta. */
   const grupos = useMemo(() => {
@@ -52,6 +60,35 @@ export function EditorRutina({
     () => resolver({ id: "", nombre, descripcion, ejercicios: items }, indice),
     [items, indice, nombre, descripcion]
   );
+
+  /**
+   * Los ejercicios tuyos que esta rutina usa.
+   *
+   * Publicar una rutina publica también el texto de estos: una rutina pública
+   * se tiene que poder escuchar, y sin las instrucciones no hay audio. La
+   * política de RLS `ejercicios de rutinas públicas` hace exactamente eso.
+   *
+   * Los del catálogo no entran en la cuenta: viajan dentro de la app, los
+   * tiene todo el mundo y no están en la base. Una rutina armada sólo con
+   * ellos publica la secuencia y nada más.
+   *
+   * Que esto se vea ANTES de guardar no es un adorno. Quien importó su
+   * biblioteca de otra aplicación puede tener textos que no le pertenecen, y
+   * un tilde llamado "Publicarla para la comunidad" no alcanza para que se dé
+   * cuenta de que también está publicando el texto.
+   */
+  const propiosAPublicar = useMemo(() => {
+    const vistos = new Set<string>();
+    return resueltos.filter((e) => {
+      if (!esEjercicioPropio(e.id) || vistos.has(e.id)) return false;
+      vistos.add(e.id);
+      return true;
+    });
+  }, [resueltos]);
+
+  // Cambiar la rutina invalida una confirmación anterior: lo que se confirmó
+  // era esta lista, no otra.
+  useEffect(() => setConfirmandoPublicacion(false), [items, publica]);
 
   const mover = (desde: number, hacia: number) => {
     if (hacia < 0 || hacia >= items.length) return;
@@ -77,6 +114,17 @@ export function EditorRutina({
     const limpio = nombre.trim();
     if (!limpio) return setAviso("Ponele un nombre a la rutina.");
     if (!items.length) return setAviso("Agregá al menos un ejercicio.");
+
+    if (publica && puedePublicar && propiosAPublicar.length && !confirmandoPublicacion) {
+      setConfirmandoPublicacion(true);
+      const cuantos =
+        propiosAPublicar.length === 1
+          ? "el texto de 1 ejercicio tuyo"
+          : `el texto de ${propiosAPublicar.length} ejercicios tuyos`;
+      return setAviso(
+        `Ojo: al publicarla también queda visible ${cuantos}. Revisá la lista de arriba y, si está bien, apretá Guardar de nuevo.`
+      );
+    }
 
     onGuardar({
       // Al editar se conserva el id para que renombrar no cree una copia.
@@ -125,6 +173,25 @@ export function EditorRutina({
             {!puedePublicar && " — hace falta iniciar sesión"}
           </span>
         </label>
+
+        {publica && puedePublicar && propiosAPublicar.length > 0 && (
+          <div className="aviso-publicar" role="status">
+            <p>
+              <strong>Se publica también tu texto.</strong> Una rutina pública se tiene que poder
+              escuchar, así que las instrucciones de estos ejercicios tuyos quedan a la vista de
+              cualquiera:
+            </p>
+            <ul>
+              {propiosAPublicar.map((e) => (
+                <li key={e.id}>{e.nombre}</li>
+              ))}
+            </ul>
+            <p className="apunte">
+              Los del catálogo no están en esta lista: vienen con la app y no se suben a ningún
+              lado. Una rutina hecha sólo con ellos publica la secuencia y nada más.
+            </p>
+          </div>
+        )}
 
         {items.length > 0 && (
           <p className="duracion">

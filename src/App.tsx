@@ -81,13 +81,20 @@ export default function App() {
   };
 
   /**
-   * Trae una rutina de la comunidad a la biblioteca propia.
+   * Trae una rutina ajena —del catálogo o de la comunidad— a la biblioteca
+   * propia.
    *
    * Es una copia de verdad, no un enlace: se duplican también los ejercicios
    * que trae, con ids propios. Si el autor la borra o la cambia, la tuya sigue
    * igual — que es lo que espera cualquiera que aprieta "copiar".
+   *
+   * Los del catálogo son la excepción y se dejan como están: los tiene todo el
+   * mundo, así que copiarlos sería guardar quince veces el mismo texto. Una
+   * copia de una rutina del catálogo termina apuntando sólo a ids del
+   * catálogo, y por eso publicarla no sube ni una línea de instrucciones: lo
+   * único que viaja es la secuencia.
    */
-  const copiarDeComunidad = async (origen: Rutina) => {
+  const copiarAMisRutinas = async (origen: Rutina) => {
     const equivalencias = new Map<string, string>();
 
     for (const item of origen.ejercicios) {
@@ -169,9 +176,7 @@ export default function App() {
                     items={items}
                     enCurso={gen.progreso?.nombre}
                     onEditar={rutina.propia ? () => setModo({ tipo: "editar" }) : undefined}
-                    onCopiar={
-                      esDeLaComunidad(rutina.id) ? () => void copiarDeComunidad(rutina) : undefined
-                    }
+                    onCopiar={!rutina.propia ? () => void copiarAMisRutinas(rutina) : undefined}
                   />
                 </div>
 

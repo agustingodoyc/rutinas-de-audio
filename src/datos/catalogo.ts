@@ -19,8 +19,14 @@ export function slug(texto: string): string {
    catálogo: alguien puede llamar a su rutina igual que una de las que vienen
    con la app. Como derivan del nombre, importar dos veces el mismo archivo
    actualiza en vez de duplicar. */
-export const idEjercicioPropio = (nombre: string) => `propio:${slug(nombre)}`;
-export const idRutinaPropia = (nombre: string) => `mia:${slug(nombre)}`;
+export const PREFIJO_PROPIO = "propio:";
+export const PREFIJO_RUTINA_PROPIA = "mia:";
+
+export const idEjercicioPropio = (nombre: string) => `${PREFIJO_PROPIO}${slug(nombre)}`;
+export const idRutinaPropia = (nombre: string) => `${PREFIJO_RUTINA_PROPIA}${slug(nombre)}`;
+
+/** Un ejercicio que cargó el usuario, y no uno de los que vienen con la app. */
+export const esEjercicioPropio = (id: string) => id.startsWith(PREFIJO_PROPIO);
 
 /** Índice por id, con los ejercicios propios pisando a los del catálogo. */
 export function indexar(propios: Ejercicio[]): Map<string, Ejercicio> {

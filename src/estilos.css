@@ -569,6 +569,39 @@ textarea:focus-visible {
   accent-color: var(--acento);
 }
 
+/* Qué texto propio queda a la vista al publicar una rutina. Se ve en rojo y
+   ocupa lugar a propósito: es la única pantalla donde alguien puede darse
+   cuenta a tiempo de que está publicando algo que no quería publicar. */
+.aviso-publicar {
+  background: var(--error-suave);
+  border-left: 3px solid var(--error);
+  border-radius: var(--radio);
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.aviso-publicar p {
+  margin: 0;
+}
+
+.aviso-publicar strong {
+  color: var(--error);
+}
+
+.aviso-publicar ul {
+  margin: 0.5rem 0;
+  padding-left: 1.2rem;
+}
+
+.aviso-publicar li {
+  margin: 0.15rem 0;
+}
+
+.aviso-publicar .apunte {
+  margin-top: 0.5rem;
+}
+
 .formulario-pie,
 .editor-pie {
   display: flex;
