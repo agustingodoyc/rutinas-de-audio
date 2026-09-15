@@ -10,14 +10,27 @@
  * archivos viejos es una fuente de confusión y nada más.
  */
 
-/* Subir el número al cambiar public/audio-worker.js: se sirve desde el cache
-   y sin esto un navegador que ya lo tiene sigue con el motor viejo. */
-const CACHE = "rutinas-shell-v2";
+const CACHE = "rutinas-shell-v3";
 
 /* Lo mínimo para que la app arranque offline. El resto de los archivos, que
    en el build llevan hash en el nombre, se van cacheando a medida que se
    piden: no se pueden listar acá porque cambian en cada build. */
 const ESENCIAL = ["./", "./audio-worker.js", "./manifest.webmanifest", "./iconos/icono-192.png"];
+
+/**
+ * Los archivos que NO llevan hash en el nombre.
+ *
+ * Todo lo que arma Vite sale como `index-a1b2c3d4.js`: el nombre cambia
+ * cuando cambia el contenido, así que servirlo del cache no puede devolver
+ * una versión equivocada. Estos otros viven en `public/` y se sirven con el
+ * mismo nombre para siempre.
+ *
+ * Para ellos, cache primero es una trampa: una corrección al motor de audio
+ * no llega nunca a quien ya tiene la versión vieja guardada. Pasó de verdad
+ * —un arreglo publicado que no le cambiaba nada a nadie— y por eso van por
+ * red primero, con el cache sólo como red de seguridad si no hay conexión.
+ */
+const SIN_HASH = ["/audio-worker.js", "/manifest.webmanifest", "/ejemplos/indice.json"];
 
 self.addEventListener("install", (evento) => {
   evento.waitUntil(
@@ -38,29 +51,41 @@ self.addEventListener("activate", (evento) => {
   );
 });
 
+/** Red primero; si falla, lo último que haya guardado bajo `clave`. */
+function redPrimero(pedido, clave) {
+  return fetch(pedido)
+    .then((res) => {
+      if (res.ok) {
+        const copia = res.clone();
+        caches.open(CACHE).then((cache) => cache.put(clave, copia));
+      }
+      return res;
+    })
+    .catch(() => caches.match(clave).then((res) => res ?? Response.error()));
+}
+
 self.addEventListener("fetch", (evento) => {
   const pedido = evento.request;
+  if (pedido.method !== "GET") return;
 
+  const url = new URL(pedido.url);
   // El modelo y las librerías vienen de otros orígenes: que sigan de largo.
-  if (pedido.method !== "GET" || new URL(pedido.url).origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) return;
 
-  // Navegación: primero la red, para no servir una versión vieja de la app;
-  // si no hay conexión, el shell cacheado.
+  // La página: red primero, para no servir una versión vieja de la app.
   if (pedido.mode === "navigate") {
-    evento.respondWith(
-      fetch(pedido)
-        .then((res) => {
-          const copia = res.clone();
-          caches.open(CACHE).then((cache) => cache.put("./", copia));
-          return res;
-        })
-        .catch(() => caches.match("./").then((res) => res ?? Response.error()))
-    );
+    evento.respondWith(redPrimero(pedido, "./"));
     return;
   }
 
-  // Todo lo demás: cache primero. Los archivos del build llevan hash, así que
-  // servirlos del cache no puede devolver una versión equivocada.
+  // Los archivos sin hash en el nombre, por el mismo motivo.
+  if (SIN_HASH.includes(url.pathname)) {
+    evento.respondWith(redPrimero(pedido, pedido));
+    return;
+  }
+
+  // El resto lleva hash: cache primero, que es lo más rápido y no puede
+  // devolver una versión equivocada.
   evento.respondWith(
     caches.match(pedido).then((guardado) => {
       if (guardado) return guardado;
