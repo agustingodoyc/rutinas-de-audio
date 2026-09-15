@@ -2,20 +2,17 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 /**
- * Los headers de cross-origin isolation están apagados, y no es un descuido.
+ * Los headers de cross-origin isolation están apagados, y volver a encenderlos
+ * es descomentar estas cuatro líneas (y las dos de public/_headers).
  *
- * Con ellos activados el navegador habilita SharedArrayBuffer y ONNX Runtime
- * sintetiza con varios hilos, que es varias veces más rápido. El precio es que
- * TODO lo que la página baja de otros dominios tiene que cumplir la política:
- * y huggingface.co, que es de donde sale el modelo de voz, dejó de cumplirla.
- * El síntoma era un "Failed to fetch" al cargar la voz, con la app entera
- * inutilizable. Medido desde la página misma: cdnjs, jsDelivr y
- * raw.githubusercontent pasan; huggingface.co no.
+ * Con ellos el navegador habilita SharedArrayBuffer y ONNX Runtime sintetiza
+ * con varios hilos, que es bastante más rápido. Se apagaron mientras se
+ * buscaba por qué no se podía bajar el modelo de voz; no eran la causa —era
+ * una redirección de huggingface.co, el README lo cuenta entero— y ahora que
+ * los modelos salen de un repositorio propio se pueden volver a encender.
  *
- * Entre una app rápida que no funciona y una lenta que funciona, gana la
- * segunda. Para recuperar la velocidad hay que servir el modelo desde un
- * dominio que sí cumpla —o desde el propio— y recién ahí volver a encenderlos.
- * Están acá abajo, listos para descomentar el día que eso pase.
+ * `credentialless` en vez de `require-corp` para no tener que exigirles CORP a
+ * los CDN de los que salen las librerías.
  */
 // const aislamiento = {
 //   "Cross-Origin-Opener-Policy": "same-origin",

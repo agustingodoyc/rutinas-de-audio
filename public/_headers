@@ -1,17 +1,18 @@
 # Cloudflare lee este archivo para agregarle headers a lo que sirve.
 #
-# Acá iban los dos headers de cross-origin isolation, que habilitan
-# SharedArrayBuffer y con él la síntesis multihilo de ONNX Runtime:
+# Acá abajo, comentados, están los dos headers de cross-origin isolation, que
+# habilitan SharedArrayBuffer y con él la síntesis multihilo de ONNX Runtime.
 #
-#   Cross-Origin-Opener-Policy: same-origin
-#   Cross-Origin-Embedder-Policy: credentialless
+# Se apagaron mientras se buscaba por qué no se podía bajar el modelo de voz.
+# No eran la causa —era la redirección de huggingface.co, ver el README— y
+# ahora que los modelos salen de raw.githubusercontent.com, que sí cumple la
+# política, se pueden volver a encender.
 #
-# Están apagados porque huggingface.co —de donde sale el modelo de voz— dejó
-# de cumplir la política, y con ellos puestos la voz no se puede bajar: la app
-# queda rota entera para ganar velocidad en algo que nunca llega a correr.
-#
-# Para volver a encenderlos hay que servir primero el modelo desde un dominio
-# que sí cumpla. Ver el README, sección "Por qué la síntesis usa un solo hilo".
+# Encenderlos es descomentar las dos líneas, acá y en vite.config.ts. Hacerlo
+# como un commit aparte, y probar que la voz cargue: si algo se rompe, revertir
+# una línea es más fácil que averiguar cuál de dos cambios fue.
 
 /*
   X-Content-Type-Options: nosniff
+#  Cross-Origin-Opener-Policy: same-origin
+#  Cross-Origin-Embedder-Policy: credentialless

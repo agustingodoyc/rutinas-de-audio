@@ -22,16 +22,38 @@
 
 const ORT_BASE = "https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/";
 const LAME_URL = "https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js";
-const HF_BASE = "https://huggingface.co/diffusionstudio/piper-voices/resolve/main";
 const PHON_BASE =
   "https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize";
-const CACHE = "voces-piper-v1";
+const CACHE = "voces-piper-v2";
 
+/**
+ * De dónde sale el modelo de voz.
+ *
+ * Estuvo apuntando a huggingface.co y un día dejó de funcionar desde el
+ * navegador: la descarga moría con "Failed to fetch" en Chrome y
+ * "NetworkError" en Firefox, aunque el mismo link abierto a mano bajara el
+ * archivo sin problema. La URL `/resolve/` no devuelve el archivo: devuelve
+ * una redirección a una URL firmada, y esa redirección no sobrevive a un
+ * `fetch` con CORS desde otro origen. Una navegación del navegador sí la
+ * sigue; de ahí que pareciera que el link "andaba".
+ *
+ * La lección del episodio, que vale más que el arreglo: el archivo sin el
+ * cual la aplicación entera no hace nada no puede vivir en un dominio ajeno
+ * cuyo comportamiento no controlamos ni nos avisan cuando cambia.
+ *
+ * Ahora sale de un repositorio propio servido por raw.githubusercontent.com,
+ * que responde `access-control-allow-origin: *`, no redirige a ningún lado y
+ * —verificado— funciona tanto con cross-origin isolation como sin ella.
+ */
+const VOZ_BASE = "https://raw.githubusercontent.com/agustingodoyc/voces-piper/main";
+
+/* Los archivos están planos en el repositorio: `<id>.onnx` y `<id>.onnx.json`.
+   La estructura de carpetas por idioma que usa Piper no aporta nada cuando el
+   repositorio tiene dos voces. Sumar una es agregar una línea acá y otra en
+   src/tipos.ts, que es la lista que se ve en pantalla. */
 const VOCES = {
-  "es_MX-claude-high": "es/es_MX/claude/high/es_MX-claude-high.onnx",
-  "es_ES-davefx-medium": "es/es_ES/davefx/medium/es_ES-davefx-medium.onnx",
-  "es_ES-sharvard-medium": "es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx",
-  "es_ES-carlfm-x_low": "es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx",
+  "es_MX-claude-high": "es_MX-claude-high.onnx",
+  "es_ES-carlfm-x_low": "es_ES-carlfm-x_low.onnx",
 };
 
 /* ── Constantes del armado ─────────────────────────────────────────────
@@ -115,10 +137,10 @@ async function cargarVoz(voiceId) {
   cargarLibrerias();
 
   estado("configuracion");
-  const cfg = JSON.parse(await (await traer(`${HF_BASE}/${ruta}.json`)).text());
+  const cfg = JSON.parse(await (await traer(`${VOZ_BASE}/${ruta}.json`)).text());
 
   estado("modelo");
-  const res = await traer(`${HF_BASE}/${ruta}`, (cargado, total) =>
+  const res = await traer(`${VOZ_BASE}/${ruta}`, (cargado, total) =>
     enviar({ tipo: "descarga", cargado, total })
   );
   const buffer = await res.arrayBuffer();

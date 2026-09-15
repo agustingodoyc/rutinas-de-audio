@@ -49,11 +49,7 @@ export type EjercicioResuelto = {
   instrucciones: string;
 };
 
-export type VozId =
-  | "es_MX-claude-high"
-  | "es_ES-davefx-medium"
-  | "es_ES-sharvard-medium"
-  | "es_ES-carlfm-x_low";
+export type VozId = "es_MX-claude-high" | "es_ES-carlfm-x_low";
 
 export type Voz = {
   id: VozId;
@@ -63,10 +59,16 @@ export type Voz = {
 };
 
 /**
- * Las cuatro voces en español disponibles en el espejo de modelos Piper.
- * `es_MX-claude-high` es la que se probó en la fase 0: acelera hasta 2,38×,
- * contra 1,68× de la liviana, y eso es lo que permite leer las instrucciones
- * rápido sin que se corten.
+ * Las voces disponibles. Son las que están en el repositorio de modelos
+ * propio: la app dejó de bajarlas de un espejo ajeno porque ese espejo un día
+ * cambió y rompió la aplicación entera (ver public/audio-worker.js).
+ *
+ * De las cuatro que se probaron quedaron dos, y no por capricho: cada una
+ * ocupa decenas de megas en un repositorio, y ofrecer seis voces parecidas
+ * sólo reparte el problema de elegir sin resolverlo. `es_MX-claude-high` es
+ * la mejor de las medidas —acelera hasta 2,38×, contra 1,68× de la liviana, y
+ * eso es lo que permite leer las instrucciones rápido sin que se corten—, y la
+ * liviana existe para conexiones lentas y celulares viejos.
  */
 export const VOCES: Voz[] = [
   {
@@ -75,12 +77,10 @@ export const VOCES: Voz[] = [
     detalle: "Latinoamericano neutro · la mejor probada",
     mb: 60,
   },
-  { id: "es_ES-davefx-medium", nombre: "Dave", detalle: "España · masculina", mb: 63 },
-  { id: "es_ES-sharvard-medium", nombre: "Sharvard", detalle: "España · femenina", mb: 63 },
   {
     id: "es_ES-carlfm-x_low",
     nombre: "Carl",
-    detalle: "España · liviana, menor calidad",
+    detalle: "España · liviana, para bajar menos",
     mb: 27,
   },
 ];

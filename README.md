@@ -67,33 +67,32 @@ sólo lo necesario para entrar en su caja, hasta 1,6×.
 
 **El MP3 se codifica por bloques.** Veinte minutos de pista en `Float32Array` serían unos 106 MB en RAM y un celular de gama media no los aguanta. Los bloques se codifican y se sueltan a medida que se arman: el pico medido fue de 3,3 MB y no crece con la duración de la rutina.
 
-### Por qué la síntesis usa un solo hilo
+### El modelo de voz se sirve de un repositorio propio
 
-ONNX Runtime puede usar varios hilos, pero para eso necesita `SharedArrayBuffer`, que el navegador sólo habilita en páginas con cross-origin isolation:
+Y esa es la parte interesante del proyecto, porque llegar ahí costó un diagnóstico equivocado.
+
+El modelo salía de `huggingface.co`, que es donde está el espejo de las voces de Piper. Un día la app dejó de poder bajarlo: `Failed to fetch` en Chrome, `NetworkError when attempting to fetch resource` en Firefox. El mismo link pegado en la barra de direcciones bajaba el archivo perfecto.
+
+**Esa contradicción es la pista.** Una URL `/resolve/` de Hugging Face no devuelve el archivo: devuelve una redirección a una URL firmada. Una navegación del navegador la sigue sin problema. Un `fetch` con CORS desde otro origen, no — y por eso el link "andaba" a mano y fallaba desde el código. Pedirlo con una herramienta tipo Postman devuelve 404, que fue lo que terminó de confirmarlo.
+
+El primer diagnóstico había sido otro: los headers de cross-origin isolation.
 
 ```
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: credentialless
 ```
 
-Esos dos headers estuvieron puestos y hoy están apagados, en `vite.config.ts` y en `public/_headers`.
+Activados, obligan a que todo lo que la página baja de otros dominios cumpla la política. La prueba desde la consola parecía cerrar el caso: con los headers puestos, cdnjs, jsDelivr y `raw.githubusercontent` devolvían 200 y sólo Hugging Face fallaba; desde una página sin headers, el mismo pedido devolvía 200. Se apagaron los headers y **el error siguió igual**.
 
-El motivo: activarlos no afecta sólo a la página, sino a **todo lo que la página baja de otros dominios**. Cada respuesta ajena tiene que cumplir la política, y huggingface.co —de donde sale el modelo de voz— dejó de cumplirla. El síntoma era un `Failed to fetch` al cargar la voz y una app completamente inutilizable: se ganaba velocidad en una síntesis que nunca llegaba a correr.
+Lo que mostró ese experimento no fue la causa: fue una correlación. La prueba que faltaba era la que separaba las dos explicaciones —el mismo pedido, mismo origen, sin headers— y esa recién apareció cuando se apagaron y el error no se movió.
 
-Medido desde la consola de la propia página, con los headers puestos:
+La solución termina siendo la misma que habría hecho falta igual, pero por el motivo correcto: **el archivo sin el cual la aplicación no hace nada no puede vivir en un dominio ajeno**. Los modelos están ahora en un repositorio propio y se bajan de `raw.githubusercontent.com`, que responde `access-control-allow-origin: *` y no redirige a ningún lado.
 
-| Dominio | Resultado |
-|---|---|
-| cdnjs (ONNX Runtime) | 200 |
-| jsDelivr (fonemizador) | 200 |
-| raw.githubusercontent | 200 |
-| **huggingface.co** | `Failed to fetch` |
+Como raw.githubusercontent sí cumple la política de aislamiento, los headers pueden volver a encenderse y con ellos la síntesis multihilo. Están comentados en `vite.config.ts` y en `public/_headers`, listos. El worker pide un hilo o varios según `crossOriginIsolated`, así que el código ya funciona de las dos formas sin tocar nada.
 
-Sin los headers, ese mismo pedido a Hugging Face devuelve 200.
+#### Sumar o cambiar una voz
 
-Para recuperar los hilos hay que servir el modelo desde un dominio que sí cumpla: subirlo a un repositorio propio y bajarlo de `raw.githubusercontent.com`, o pasarlo por el propio Worker de Cloudflare y volverlo same-origin. Cualquiera de las dos permite volver a encender los headers, que están comentados esperando ese día.
-
-El worker pide un hilo o varios según `crossOriginIsolated`, así que el código ya funciona de las dos formas sin tocar nada.
+Los archivos van planos en el repositorio de voces, como `<id>.onnx` y `<id>.onnx.json`. Sumar una voz es agregar una línea en `VOCES` dentro de `public/audio-worker.js` y otra en `src/tipos.ts`, que es la lista que se ve en pantalla.
 
 ## Estructura
 
@@ -327,7 +326,7 @@ Si sumás material de esas fuentes, la atribución que pida cada licencia va en 
 
 ## Créditos y licencias
 
-- Voces y modelos: [Piper](https://github.com/rhasspy/piper) (MIT), servidos desde [Hugging Face](https://huggingface.co/diffusionstudio/piper-voices)
+- Voces y modelos: [Piper](https://github.com/rhasspy/piper) (MIT). Los `.onnx` salen originalmente de [piper-voices](https://huggingface.co/rhasspy/piper-voices) y acá se sirven desde una copia propia, por el motivo que cuenta la sección del modelo de voz
 - Inferencia: [ONNX Runtime Web](https://github.com/microsoft/onnxruntime) (MIT)
 - Fonemizador: [@diffusionstudio/piper-wasm](https://www.npmjs.com/package/@diffusionstudio/piper-wasm)
 - Codificador MP3: [lamejs](https://github.com/zhuker/lamejs) — **LGPL**, cargado desde CDN sin modificar
