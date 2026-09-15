@@ -124,7 +124,15 @@ async function cargarVoz(voiceId) {
   const buffer = await res.arrayBuffer();
 
   ort.env.wasm.wasmPaths = ORT_BASE;
-  ort.env.wasm.numThreads = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1));
+  /* Varios hilos sólo si el navegador los habilita. SharedArrayBuffer existe
+     únicamente en páginas con cross-origin isolation, y hoy esos headers están
+     apagados porque rompían la bajada del modelo (ver public/_headers). Pedir
+     hilos igual haría que ONNX intente y falle en vez de caer parado en su
+     versión de un hilo. */
+  const hilos = self.crossOriginIsolated
+    ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1))
+    : 1;
+  ort.env.wasm.numThreads = hilos;
   ort.env.logLevel = "error";
 
   estado("sesion");

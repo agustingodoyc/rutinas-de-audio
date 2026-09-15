@@ -67,16 +67,33 @@ sólo lo necesario para entrar en su caja, hasta 1,6×.
 
 **El MP3 se codifica por bloques.** Veinte minutos de pista en `Float32Array` serían unos 106 MB en RAM y un celular de gama media no los aguanta. Los bloques se codifican y se sueltan a medida que se arman: el pico medido fue de 3,3 MB y no crece con la duración de la rutina.
 
-### Los headers no son opcionales
+### Por qué la síntesis usa un solo hilo
 
-ONNX Runtime usa varios hilos vía `SharedArrayBuffer`, y eso exige cross-origin isolation:
+ONNX Runtime puede usar varios hilos, pero para eso necesita `SharedArrayBuffer`, que el navegador sólo habilita en páginas con cross-origin isolation:
 
 ```
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: credentialless
 ```
 
-Están en `vite.config.ts` para desarrollo y en `public/_headers` para Cloudflare Pages. Sin ellos la app funciona igual pero en un solo hilo, varias veces más lenta. Es la razón por la que este proyecto **no** se hospeda en GitHub Pages, que no deja configurar headers.
+Esos dos headers estuvieron puestos y hoy están apagados, en `vite.config.ts` y en `public/_headers`.
+
+El motivo: activarlos no afecta sólo a la página, sino a **todo lo que la página baja de otros dominios**. Cada respuesta ajena tiene que cumplir la política, y huggingface.co —de donde sale el modelo de voz— dejó de cumplirla. El síntoma era un `Failed to fetch` al cargar la voz y una app completamente inutilizable: se ganaba velocidad en una síntesis que nunca llegaba a correr.
+
+Medido desde la consola de la propia página, con los headers puestos:
+
+| Dominio | Resultado |
+|---|---|
+| cdnjs (ONNX Runtime) | 200 |
+| jsDelivr (fonemizador) | 200 |
+| raw.githubusercontent | 200 |
+| **huggingface.co** | `Failed to fetch` |
+
+Sin los headers, ese mismo pedido a Hugging Face devuelve 200.
+
+Para recuperar los hilos hay que servir el modelo desde un dominio que sí cumpla: subirlo a un repositorio propio y bajarlo de `raw.githubusercontent.com`, o pasarlo por el propio Worker de Cloudflare y volverlo same-origin. Cualquiera de las dos permite volver a encender los headers, que están comentados esperando ese día.
+
+El worker pide un hilo o varios según `crossOriginIsolated`, así que el código ya funciona de las dos formas sin tocar nada.
 
 ## Estructura
 
