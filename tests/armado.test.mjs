@@ -147,9 +147,18 @@ sintetizar = async (texto, pedida) => {
 };
 `);
 
-const correr = async (msNatural, caja) => {
-  ctx(`msNatural = ${msNatural}; llamadas = 0; pedidas = [];`);
-  const buf = await vm.runInContext(`bloqueHablado("frase de prueba", ${caja})`, sandbox);
+const TEXTO = "frase de prueba";
+
+/**
+ * `msEstimado` es lo que el motor cree que va a durar el texto; `msNatural` es
+ * lo que de verdad dura. Separarlos es justamente lo que permite probar qué
+ * pasa cuando la estimación se equivoca. Con `msEstimado = null` se apaga la
+ * estimación y queda el comportamiento de antes de tenerla.
+ */
+const correr = async (msNatural, caja, msEstimado = msNatural) => {
+  const porCaracter = msEstimado === null ? "null" : msEstimado / TEXTO.length;
+  ctx(`msNatural = ${msNatural}; llamadas = 0; pedidas = []; msPorCaracter = ${porCaracter};`);
+  const buf = await vm.runInContext(`bloqueHablado(${JSON.stringify(TEXTO)}, ${caja})`, sandbox);
   return { ms: ctx("duracionMs")(buf), llamadas: ctx("llamadas"), pedidas: ctx("pedidas") };
 };
 
@@ -157,25 +166,49 @@ const correr = async (msNatural, caja) => {
   const r = await correr(1600, 2000);
   check("entra tal cual: la caja queda en 2000 ms", Math.abs(r.ms - 2000) < 1, r.ms.toFixed(0) + " ms");
   check("entra tal cual: una sola síntesis", r.llamadas === 1);
+  check("entra tal cual: no acelera de gusto", r.pedidas[0] === 1);
 }
 
 {
+  // La estimación ve que no entra, así que arranca acelerado: una sola vez.
   const r = await correr(2400, 2000);
-  check("acelerada entra: la caja queda en 2000 ms", Math.abs(r.ms - 2000) < 1, r.ms.toFixed(0) + " ms");
-  check("acelerada entra: dos síntesis", r.llamadas === 2);
-  check("el segundo intento pide más de 1×", r.pedidas[1] > 1, "pidió " + r.pedidas[1].toFixed(2) + "×");
+  check("no entra: la caja queda en 2000 ms", Math.abs(r.ms - 2000) < 1, r.ms.toFixed(0) + " ms");
+  check("no entra: la estimación ahorra la síntesis a 1×", r.llamadas === 1);
+  check("no entra: el único intento ya viene acelerado", r.pedidas[0] > 1, "pidió " + r.pedidas[0].toFixed(2) + "×");
+}
+
+{
+  // Sin estimación se comporta como antes: prueba a 1× y después acelera.
+  const r = await correr(2400, 2000, null);
+  check("sin estimación: la caja queda en 2000 ms", Math.abs(r.ms - 2000) < 1, r.ms.toFixed(0) + " ms");
+  check("sin estimación: dos síntesis", r.llamadas === 2);
+  check("sin estimación: el primer intento es a 1×", r.pedidas[0] === 1);
+  check("sin estimación: el segundo pide más", r.pedidas[1] > 1, "pidió " + r.pedidas[1].toFixed(2) + "×");
+}
+
+{
+  // Estimación optimista: cree que entra y no entra. Cuesta lo mismo que antes.
+  const r = await correr(2400, 2000, 900);
+  check("estimación optimista: igual queda en 2000 ms", Math.abs(r.ms - 2000) < 1, r.ms.toFixed(0) + " ms");
+  check("estimación optimista: corrige con una segunda síntesis", r.llamadas === 2);
 }
 
 {
   const r = await correr(8000, 2000);
+  const ultima = r.pedidas[r.pedidas.length - 1];
   const minimo = 8000 / ctx("MAX_ACELERACION_NATURAL");
   check("ni acelerada entra: la caja cede", r.ms > 2000, r.ms.toFixed(0) + " ms");
   check("la voz entera cabe en la caja nueva", r.ms >= minimo, r.ms.toFixed(0) + " >= " + minimo.toFixed(0));
   check("la caja se redondea a décimas de segundo", Math.abs(r.ms % 100) < 1);
   check(
     "nunca acelera más que el tope natural",
-    ctx("realDe")(r.pedidas[1]) <= ctx("MAX_ACELERACION_NATURAL") + 0.01,
-    "real " + ctx("realDe")(r.pedidas[1]).toFixed(2) + "×"
+    ctx("realDe")(ultima) <= ctx("MAX_ACELERACION_NATURAL") + 0.01,
+    "real " + ctx("realDe")(ultima).toFixed(2) + "×"
+  );
+  check(
+    "ya en el tope, no repite la misma síntesis",
+    r.llamadas === 1,
+    r.llamadas + " síntesis"
   );
 }
 

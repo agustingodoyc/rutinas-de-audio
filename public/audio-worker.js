@@ -171,6 +171,7 @@ async function cargarVoz(voiceId) {
   modelo.ruido = cfg.inference.noise_scale;
   modelo.ruidoW = cfg.inference.noise_w;
   calibracion = null; // cada voz tiene su propia curva
+  msPorCaracter = null;
 
   enviar({
     tipo: "voz",
@@ -290,6 +291,19 @@ async function sintetizar(texto, velocidad = 1) {
 
 let calibracion = null;
 
+/**
+ * Cuánto dura un carácter hablado a 1×, en milisegundos. Se mide al calibrar,
+ * gratis: la síntesis de referencia ya se hacía.
+ *
+ * Es una aproximación —la puntuación, los números y las pausas no duran lo
+ * mismo que una letra— y por eso nunca decide sola: sirve para evitar una
+ * síntesis que se sabe de antemano que va a sobrar, y después se mide el audio
+ * real y se corrige si hizo falta.
+ */
+let msPorCaracter = null;
+
+const estimarMs = (texto) => (msPorCaracter ? texto.length * msPorCaracter : null);
+
 function pedidaPara(deseado) {
   const c = calibracion;
   if (!c || c.length < 2) return Math.min(deseado, MAX_PEDIDO);
@@ -309,6 +323,7 @@ async function calibrar() {
   estado("calibrando");
 
   const base = duracionMs(await sintetizar(TEXTO_CALIBRACION, 1));
+  msPorCaracter = base / TEXTO_CALIBRACION.length;
   const filas = [];
   for (const pedida of [1, 1.5, 2, 3]) {
     const ms = pedida === 1 ? base : duracionMs(await sintetizar(TEXTO_CALIBRACION, pedida));
@@ -362,22 +377,52 @@ function fundir(buf, ms) {
 }
 
 /**
- * Bloque hablado, en tres intentos: entrar tal cual, acelerar hasta donde
- * siga sonando natural, y recién entonces agrandar la caja. El tercer paso
- * casi nunca se usa; está para que un nombre larguísimo cargado por un
- * usuario no termine cortado a mitad de palabra.
+ * Bloque hablado: entrar en la caja, acelerando lo mínimo necesario, y sólo
+ * si ni acelerado entra, agrandar la caja. El último paso casi nunca se usa;
+ * está para que un nombre larguísimo cargado por un usuario no termine
+ * cortado a mitad de palabra.
+ *
+ * El primer intento se elige con la estimación, no a ciegas. Antes se
+ * sintetizaba siempre a 1× y, si no entraba, se sintetizaba de nuevo
+ * acelerado. Para un anuncio como «Ahora, Estiramiento de isquiotibiales.»
+ * —38 caracteres, unos 2,5 s a 1×, en una caja de 2 s— el primer audio no
+ * entraba nunca: se generaba para descartarlo. Medido sobre una rutina de seis
+ * ejercicios, eso era alrededor de un tercio de las inferencias.
+ *
+ * La estimación sólo elige por dónde empezar. Lo que decide sigue siendo la
+ * medición del audio que volvió, así que una estimación optimista cuesta
+ * exactamente lo que costaba antes y una pesimista no rompe nada.
  */
 async function bloqueHablado(texto, msCaja) {
   const nCaja = msAMuestras(msCaja);
   const colchon = msAMuestras(MS_COLCHON_MIN);
+  const msUtil = msCaja - MS_COLCHON_MIN;
 
-  let voz = await sintetizar(texto, 1);
+  /* Velocidad del primer intento, medida contra 1×. Si la estimación dice que
+     el texto entra, se pide 1×: acelerar de gusto empeora cómo suena. */
+  const estimado = estimarMs(texto);
+  let objetivo = 1;
+  if (estimado !== null && msUtil > 0 && estimado > msUtil) {
+    objetivo = Math.min((estimado / msUtil) * (1 + MARGEN_ACELERACION), MAX_ACELERACION_NATURAL);
+  }
+
+  const pedir = (v) => (v === 1 ? 1 : Math.min(pedidaPara(v), MAX_PEDIDO));
+
+  let voz = await sintetizar(texto, pedir(objetivo));
   if (voz.length + colchon <= nCaja) return encajar(voz, nCaja);
 
-  const necesario = (voz.length + colchon) / nCaja;
-  const objetivo = Math.min(necesario * (1 + MARGEN_ACELERACION), MAX_ACELERACION_NATURAL);
-  voz = await sintetizar(texto, Math.min(pedidaPara(objetivo), MAX_PEDIDO));
-  if (voz.length + colchon <= nCaja) return encajar(voz, nCaja);
+  /* No entró. El factor se aplica sobre la velocidad con la que se sintetizó,
+     no sobre 1×: si el primer intento ya venía acelerado, medir contra 1×
+     daría una velocidad equivocada. */
+  const factor = (voz.length + colchon) / nCaja;
+  const segundo = Math.min(objetivo * factor * (1 + MARGEN_ACELERACION), MAX_ACELERACION_NATURAL);
+
+  /* Si el primer intento ya estaba en el tope de lo natural, pedir otra vez lo
+     mismo sería otra síntesis idéntica para nada. */
+  if (segundo > objetivo + 0.001) {
+    voz = await sintetizar(texto, pedir(segundo));
+    if (voz.length + colchon <= nCaja) return encajar(voz, nCaja);
+  }
 
   const paso = msAMuestras(MS_PASO_BLOQUE);
   return encajar(voz, Math.ceil((voz.length + colchon) / paso) * paso);

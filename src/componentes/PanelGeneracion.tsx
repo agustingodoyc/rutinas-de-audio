@@ -93,12 +93,29 @@ export function PanelGeneracion({
     }
   }, [techoVelocidad, velocidad, disponibles]);
 
+  /**
+   * Elegir una velocidad la escucha. Antes había que elegirla y después
+   * apretar «Escuchar», y el segundo paso no se entendía: quien toca «1,5×»
+   * ya pidió oír 1,5×, no pidió configurarlo.
+   *
+   * No cuesta casi nada: es una frase sola, y el motor cachea por texto y
+   * velocidad, así que volver a una que ya se escuchó no sintetiza de nuevo.
+   */
+  const elegir = (v: number) => {
+    setVelocidad(v);
+    if (hayVoz && !ocupado) onProbar(v);
+  };
+
   const porcentaje =
     progreso && progreso.total ? Math.round((progreso.hecho / progreso.total) * 100) : 0;
 
   return (
     <section className="panel generacion">
-      {hayVoz && puedeGenerar && (
+      {/* Se muestra aunque todavía no haya voz cargada. Escondido hasta ese
+          momento, la opción no existía para quien recién llega: no se puede
+          elegir algo que no se ve. Lo único que necesita la voz es la muestra,
+          así que lo que se apaga es ese botón y nada más. */}
+      {puedeGenerar && (
         <div className="velocidad">
           <p className="titulo-panel">Velocidad de las instrucciones</p>
 
@@ -109,14 +126,21 @@ export function PanelGeneracion({
                 className={`boton chico${v === velocidad ? " activo" : ""}`}
                 aria-pressed={v === velocidad}
                 disabled={ocupado}
-                onClick={() => setVelocidad(v)}
+                onClick={() => elegir(v)}
               >
                 {etiqueta(v)}
               </button>
             ))}
 
-            <button className="boton chico fantasma" disabled={ocupado} onClick={() => onProbar(velocidad)}>
-              {probando ? "Preparando…" : "Escuchar"}
+            {/* Queda para repetir la misma velocidad: tocar el botón que ya
+                está activo no dispara nada, porque no cambia la elección. */}
+            <button
+              className="boton chico fantasma"
+              disabled={ocupado || !hayVoz}
+              title={hayVoz ? undefined : "Cargá una voz para escuchar una muestra"}
+              onClick={() => onProbar(velocidad)}
+            >
+              {probando ? "Preparando…" : muestra ? "Repetir" : "Escuchar"}
             </button>
           </div>
 
@@ -134,6 +158,9 @@ export function PanelGeneracion({
             Cambia qué tan rápido se leen las instrucciones, no cuánto dura el audio: cada ejercicio
             dura los segundos que tiene asignados y la instrucción se repite hasta llenarlos.
             {recortada && ` Esta voz llega hasta ${etiqueta(Math.floor(techo * 100) / 100)}.`}
+            {hayVoz
+              ? " Tocá una velocidad para escucharla."
+              : " Cargá una voz para poder escuchar una muestra."}
           </p>
         </div>
       )}
