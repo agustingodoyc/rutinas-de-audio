@@ -25,6 +25,19 @@ export function componerInstrucciones(comoSeHace: string, consejo: string): stri
   return tip ? `${base} ${ETIQUETA_CONSEJOS} ${tip}` : base;
 }
 
+/**
+ * La primera oración de un texto.
+ *
+ * Se usa para la muestra de velocidad: una instrucción completa puede durar
+ * quince segundos a 1×, y escuchar quince segundos para decidir si una
+ * velocidad te sirve es demasiado. Con la primera oración alcanza.
+ */
+export function primeraOracion(texto: string): string {
+  const limpio = texto.trim();
+  const corte = limpio.search(/[.!?](\s|$)/);
+  return corte === -1 ? limpio : limpio.slice(0, corte + 1);
+}
+
 /** El string guardado → los dos campos. Un texto sin etiquetas entra entero. */
 export function separarInstrucciones(texto: string): { comoSeHace: string; consejo: string } {
   const sinEtiqueta = texto.replace(/^\s*INSTRUCCIONES:\s*/i, "");

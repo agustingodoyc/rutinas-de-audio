@@ -966,6 +966,42 @@ textarea:focus-visible {
   border-color: var(--line-fuerte);
 }
 
+/* ── Elegir la velocidad, y escucharla antes de generar ── */
+
+.velocidad {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-bottom: 0.9rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.velocidad-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* La opción elegida se marca con el color de acento y no sólo con el borde:
+   en un grupo de cinco botones iguales, un borde apenas distinto no alcanza
+   para ver cuál está activo de un vistazo. */
+.boton.activo {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--acento-tinta);
+}
+
+.boton.activo:hover:not(:disabled) {
+  background: var(--acento);
+  border-color: var(--acento);
+}
+
+.velocidad .muestra {
+  width: 100%;
+  height: 2.2rem;
+}
+
 /* ── El panel de cuentas, todavía sin nada detrás ── */
 
 .cuentas {

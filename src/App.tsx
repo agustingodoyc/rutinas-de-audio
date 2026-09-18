@@ -15,6 +15,7 @@ import { PanelEjemplo } from "./componentes/PanelEjemplo";
 import { useEjemplos } from "./datos/useEjemplos";
 import { useSesion } from "./datos/useSesion";
 import { useComunidad } from "./datos/useComunidad";
+import { primeraOracion, separarInstrucciones } from "./datos/texto";
 import { esDeLaComunidad } from "./datos/nube";
 
 type Modo = { tipo: "ver" } | { tipo: "editar" } | { tipo: "nueva" };
@@ -58,6 +59,15 @@ export default function App() {
   );
 
   const items = useMemo(() => (rutina ? resolver(rutina, indice) : []), [rutina, indice]);
+
+  /* La frase con la que se prueba una velocidad sale del primer ejercicio de
+     la rutina que está abierta, no de un texto de ejemplo: se escucha lo que
+     se va a escuchar, con esas palabras y ese largo. */
+  const textoMuestra = useMemo(() => {
+    const primero = items[0];
+    if (!primero) return "";
+    return primeraOracion(separarInstrucciones(primero.instrucciones).comoSeHace);
+  }, [items]);
 
   const elegir = (id: string) => {
     setSeleccionada(id);
@@ -200,7 +210,14 @@ export default function App() {
                     resultado={gen.resultado}
                     puedeGenerar={items.length > 0}
                     tituloRutina={rutina.nombre}
-                    onGenerar={() => gen.generar(items, slug(rutina.nombre) || "rutina")}
+                    techoVelocidad={gen.techoVelocidad}
+                    muestra={gen.muestra}
+                    probando={gen.probando}
+                    hilos={gen.hilos}
+                    onProbar={(velocidad) => gen.probar(textoMuestra, velocidad)}
+                    onGenerar={(velocidad) =>
+                      gen.generar(items, slug(rutina.nombre) || "rutina", velocidad)
+                    }
                   />
                 </aside>
               </div>

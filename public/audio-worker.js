@@ -7,13 +7,15 @@
  * independiente del framework de la UI.
  *
  * Protocolo:
- *   ← { tipo: "cargar", voiceId }
- *   ← { tipo: "generar", ejercicios: [{ nombre, seg, cambioLado, instrucciones }] }
+ *   ← { tipo: "cargar",  voiceId }
+ *   ← { tipo: "generar", ejercicios: [{ nombre, seg, cambioLado, instrucciones }], velocidad }
+ *   ← { tipo: "probar",  texto, velocidad }
  *   → { tipo: "estado",   fase, detalle }
  *   → { tipo: "descarga", cargado, total }
  *   → { tipo: "progreso", hecho, total, nombre }
- *   → { tipo: "voz",      voiceId, bytes, sampleRate, techo }
- *   → { tipo: "listo",    mp3, duracionMs, bytes }
+ *   → { tipo: "voz",      voiceId, bytes, sampleRate, techo, hilos }
+ *   → { tipo: "muestra",  mp3, velocidad }
+ *   → { tipo: "listo",    mp3, duracionMs, bytes, msGeneracion }
  *   → { tipo: "error",    mensaje }
  */
 
@@ -67,7 +69,10 @@ const MS_PASO_BLOQUE = 100;
 const MS_FADE_EJECUCION = 500;
 const MAX_ACELERACION_NATURAL = 1.6; // más que esto, un anuncio suena atropellado
 const MARGEN_ACELERACION = 0.05; // acelerar lo justo deja la frase al borde
-const VELOCIDAD_INSTRUCCIONES = 1.25; // rápido para que entre, lento para poder seguirlo
+/* La velocidad a la que se leen las instrucciones ahora la elige quien usa la
+   página; esto es sólo el punto de partida. 1,25× salió de probarlo entrenando:
+   a 2× y a 1,5× las instrucciones eran imposibles de seguir en movimiento. */
+const VELOCIDAD_POR_DEFECTO = 1.25;
 const MAX_PEDIDO = 4.0;
 const KBPS = 96;
 
@@ -172,7 +177,19 @@ async function cargarVoz(voiceId) {
     voiceId,
     bytes: buffer.byteLength,
     sampleRate: modelo.rate,
+    /* Se informa cuántos hilos consiguió de verdad, no cuántos se pidieron.
+       Es la única forma de notar desde afuera que los headers de aislamiento
+       se cayeron: la app seguiría andando, sólo que varias veces más lenta, y
+       sin este número nadie se enteraría hasta medirlo con un cronómetro. */
+    hilos,
   });
+
+  /* Calibrar acá y no al generar. Cuesta cuatro síntesis cortas —un par de
+     segundos— sobre una carga que ya tardó bastante, y a cambio la interfaz
+     sabe desde el principio hasta qué velocidad llega esta voz. Sin eso, el
+     selector ofrecería 2× en una voz cuyo techo real es 1,7× y entregaría
+     algo distinto de lo que dice: una interfaz que miente. */
+  await calibrar();
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -457,9 +474,15 @@ function sumideroMp3(rate) {
    Generación de la rutina
    ════════════════════════════════════════════════════════════════════ */
 
-async function generar(ejercicios) {
+async function generar(ejercicios, velocidad) {
   if (!modelo.sesion) throw new Error("Todavía no se cargó la voz.");
   await calibrar();
+
+  const arranque = performance.now();
+
+  /* Se traduce una sola vez, fuera del loop: `pedidaPara` interpola sobre la
+     curva medida y el resultado es el mismo para todos los ejercicios. */
+  const pedida = pedidaPara(velocidad || VELOCIDAD_POR_DEFECTO);
 
   const sumidero = sumideroMp3(modelo.rate);
   const hayCambioLado = ejercicios.some((e) => e.cambioLado);
@@ -476,7 +499,7 @@ async function generar(ejercicios) {
        preparación del ejercicio anterior ("Próximo ejercicio, X") y en el
        anuncio ("Ahora, X"). Repetirlo acá lo decía una tercera vez, y encima
        en cada vuelta del loop durante todo el ejercicio. */
-    const voz = await sintetizar(ej.instrucciones, pedidaPara(VELOCIDAD_INSTRUCCIONES));
+    const voz = await sintetizar(ej.instrucciones, pedida);
     const ejecucion = bloqueEjecucion(voz, ej.seg, ej.cambioLado, aviso);
 
     const siguiente = ejercicios[i + 1]?.nombre;
@@ -500,9 +523,42 @@ async function generar(ejercicios) {
       mp3: mp3.buffer,
       duracionMs: (muestras / modelo.rate) * 1000,
       bytes: mp3.length,
+      /* Cuánto tardó en generarse, para poder comparar cambios con un número
+         en vez de con una impresión. */
+      msGeneracion: performance.now() - arranque,
     },
     [mp3.buffer]
   );
+}
+
+/**
+ * Una muestra corta para escuchar una velocidad antes de generar nada.
+ *
+ * Existe por un motivo de producto, no técnico: la velocidad correcta no se
+ * puede elegir leyendo un número. «1,5×» no le dice nada a nadie hasta que lo
+ * escucha, y descubrirlo después de esperar la generación de una rutina de
+ * cinco minutos es exactamente la clase de frustración que hace que alguien
+ * cierre la pestaña.
+ *
+ * Es barato: una frase sola contra una rutina entera. Y como `sintetizar`
+ * cachea por (texto, velocidad), la frase que se probó no se vuelve a
+ * sintetizar cuando después se genera el audio de verdad a esa velocidad.
+ */
+async function probar(texto, velocidad) {
+  if (!modelo.sesion) throw new Error("Todavía no se cargó la voz.");
+  await calibrar();
+
+  estado("probando");
+  const voz = await sintetizar(texto, pedidaPara(velocidad || VELOCIDAD_POR_DEFECTO));
+
+  /* Se codifica a MP3 aunque sean tres segundos, para no tener dos caminos de
+     salida distintos: el reproductor de la muestra y el del audio final son el
+     mismo <audio> con una URL de blob. */
+  const sumidero = sumideroMp3(modelo.rate);
+  sumidero.escribir(voz);
+  const { mp3 } = sumidero.cerrar();
+
+  enviar({ tipo: "muestra", mp3: mp3.buffer, velocidad }, [mp3.buffer]);
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -516,7 +572,9 @@ self.onmessage = async (e) => {
       await cargarVoz(e.data.voiceId);
       estado("voz-lista");
     } else if (tipo === "generar") {
-      await generar(e.data.ejercicios);
+      await generar(e.data.ejercicios, e.data.velocidad);
+    } else if (tipo === "probar") {
+      await probar(e.data.texto, e.data.velocidad);
     }
   } catch (err) {
     enviar({ tipo: "error", mensaje: err?.message ?? String(err) });

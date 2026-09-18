@@ -8,17 +8,22 @@ export type Resultado = {
   nombreArchivo: string;
   duracionMs: number;
   bytes: number;
+  /** Cuánto tardó en generarse. Sirve para comparar cambios con un número. */
+  msGeneracion: number;
 };
 
 export type Descarga = { cargado: number; total: number };
 export type Progreso = { hecho: number; total: number; nombre?: string };
+/** Una velocidad ya sintetizada y lista para escuchar. */
+export type Muestra = { url: string; velocidad: number };
 
 type MensajeWorker =
   | { tipo: "estado"; fase: string; detalle?: string }
   | { tipo: "descarga"; cargado: number; total: number }
   | { tipo: "progreso"; hecho: number; total: number; nombre?: string }
-  | { tipo: "voz"; voiceId: VozId; bytes?: number; sampleRate?: number; techo?: number }
-  | { tipo: "listo"; mp3: ArrayBuffer; duracionMs: number; bytes: number }
+  | { tipo: "voz"; voiceId: VozId; bytes?: number; sampleRate?: number; techo?: number; hilos?: number }
+  | { tipo: "muestra"; mp3: ArrayBuffer; velocidad: number }
+  | { tipo: "listo"; mp3: ArrayBuffer; duracionMs: number; bytes: number; msGeneracion: number }
   | { tipo: "error"; mensaje: string };
 
 const TEXTOS: Record<string, string> = {
@@ -27,6 +32,7 @@ const TEXTOS: Record<string, string> = {
   sesion: "Preparando el modelo…",
   fonemizador: "Cargando el pronunciador…",
   calibrando: "Midiendo la velocidad de la voz…",
+  probando: "Preparando la muestra…",
   sintetizando: "Sintetizando…",
   codificando: "Armando el MP3…",
 };
@@ -41,6 +47,7 @@ const TEXTOS: Record<string, string> = {
 export function useGenerador() {
   const workerRef = useRef<Worker | null>(null);
   const urlRef = useRef<string | null>(null);
+  const urlMuestraRef = useRef<string | null>(null);
   const nombreRef = useRef<string>("rutina");
 
   const [fase, setFase] = useState<Fase>("sin-voz");
@@ -49,6 +56,14 @@ export function useGenerador() {
   const [progreso, setProgreso] = useState<Progreso | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [vozCargada, setVozCargada] = useState<VozId | null>(null);
+  const [muestra, setMuestra] = useState<Muestra | null>(null);
+  const [probando, setProbando] = useState(false);
+  /* Hasta dónde acelera ESTA voz. Lo mide el worker al cargarla, porque el
+     techo depende del modelo: 2,38× en la voz buena, 1,68× en la liviana. La
+     interfaz lo usa para no ofrecer velocidades que no puede entregar. */
+  const [techoVelocidad, setTechoVelocidad] = useState<number | null>(null);
+  /** Hilos que ONNX consiguió de verdad. 1 significa que no hay aislamiento. */
+  const [hilos, setHilos] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // El worker se crea una sola vez, así que su onmessage no puede leer estado
@@ -89,6 +104,19 @@ export function useGenerador() {
           vozRef.current = msg.voiceId;
           setVozCargada(msg.voiceId);
         }
+        if (msg.hilos) setHilos(msg.hilos);
+        // Llega en un segundo mensaje: el techo recién se conoce al calibrar.
+        if (msg.techo) setTechoVelocidad(msg.techo);
+        return;
+      }
+
+      if (msg.tipo === "muestra") {
+        if (urlMuestraRef.current) URL.revokeObjectURL(urlMuestraRef.current);
+        const url = URL.createObjectURL(new Blob([msg.mp3], { type: "audio/mpeg" }));
+        urlMuestraRef.current = url;
+        setMuestra({ url, velocidad: msg.velocidad });
+        setProbando(false);
+        setMensaje("");
         return;
       }
 
@@ -101,6 +129,7 @@ export function useGenerador() {
           nombreArchivo: `${nombreRef.current}.mp3`,
           duracionMs: msg.duracionMs,
           bytes: msg.bytes,
+          msGeneracion: msg.msGeneracion,
         });
         setFase("listo");
         setMensaje("");
@@ -114,6 +143,7 @@ export function useGenerador() {
         setMensaje("");
         setDescarga(null);
         setProgreso(null);
+        setProbando(false);
       }
     };
 
@@ -139,13 +169,24 @@ export function useGenerador() {
   );
 
   const generar = useCallback(
-    (ejercicios: EjercicioResuelto[], nombreArchivo: string) => {
+    (ejercicios: EjercicioResuelto[], nombreArchivo: string, velocidad: number) => {
       setError(null);
       setResultado(null);
       setFase("generando");
       setProgreso({ hecho: 0, total: ejercicios.length });
       nombreRef.current = nombreArchivo;
-      worker().postMessage({ tipo: "generar", ejercicios });
+      worker().postMessage({ tipo: "generar", ejercicios, velocidad });
+    },
+    [worker]
+  );
+
+  /** Sintetiza una frase corta a una velocidad, para escucharla antes de generar. */
+  const probar = useCallback(
+    (texto: string, velocidad: number) => {
+      setError(null);
+      setProbando(true);
+      setMensaje(TEXTOS.probando);
+      worker().postMessage({ tipo: "probar", texto, velocidad });
     },
     [worker]
   );
@@ -161,6 +202,7 @@ export function useGenerador() {
     () => () => {
       workerRef.current?.terminate();
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      if (urlMuestraRef.current) URL.revokeObjectURL(urlMuestraRef.current);
     },
     []
   );
@@ -172,9 +214,14 @@ export function useGenerador() {
     progreso,
     resultado,
     vozCargada,
+    muestra,
+    probando,
+    techoVelocidad,
+    hilos,
     error,
     cargarVoz,
     generar,
+    probar,
     limpiarResultado,
   };
 }

@@ -1,18 +1,14 @@
 # Cloudflare lee este archivo para agregarle headers a lo que sirve.
 #
-# Acá abajo, comentados, están los dos headers de cross-origin isolation, que
-# habilitan SharedArrayBuffer y con él la síntesis multihilo de ONNX Runtime.
+# Los dos de cross-origin isolation son los que habilitan SharedArrayBuffer, y
+# con él la síntesis multihilo de ONNX Runtime. Los mismos están en
+# vite.config.ts para el servidor de desarrollo: si se tocan acá, se tocan allá.
 #
-# Se apagaron mientras se buscaba por qué no se podía bajar el modelo de voz.
-# No eran la causa —era la redirección de huggingface.co, ver el README— y
-# ahora que los modelos salen de raw.githubusercontent.com, que sí cumple la
-# política, se pueden volver a encender.
-#
-# Encenderlos es descomentar las dos líneas, acá y en vite.config.ts. Hacerlo
-# como un commit aparte, y probar que la voz cargue: si algo se rompe, revertir
-# una línea es más fácil que averiguar cuál de dos cambios fue.
+# Con esto puesto, todo lo que la página baje de otro dominio tiene que cumplir
+# la política o no se baja. Hoy cumplen los tres que se usan: cdnjs, jsDelivr y
+# raw.githubusercontent, que es de donde salen los modelos de voz.
 
 /*
   X-Content-Type-Options: nosniff
-#  Cross-Origin-Opener-Policy: same-origin
-#  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless

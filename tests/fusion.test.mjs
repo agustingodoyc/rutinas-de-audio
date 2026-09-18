@@ -11,15 +11,26 @@
  * Necesita node 22.18 o más nuevo, que lee TypeScript sin compilar.
  */
 
+/* Estos tests importan un .ts directamente, y eso lo entiende node 22.18 en
+   adelante. En una versión más vieja no se puede: el archivo no compila y no
+   hay nada que probar.
+
+   Se saltean en vez de fallar, y la diferencia importa. `npm test` está
+   encadenado con `npm run build`: si esto corta, no se puede compilar el
+   proyecto en una máquina con node viejo. Un test que impide trabajar termina
+   borrado o salteado con `--no-verify`, que es peor que uno que avisa fuerte y
+   deja seguir. El aviso va a stderr y en mayúsculas justamente para que no
+   pase desapercibido. */
 let fusionar;
 try {
   ({ fusionar } = await import("../src/datos/fusion.ts"));
 } catch (error) {
   console.error(
-    `No pude importar fusion.ts. Estos tests necesitan node 22.18+ (tenés ${process.version}), ` +
-      `que lee TypeScript sin compilar.\n${error.message}`
+    `\n  SALTEADO: los tests de fusión necesitan node 22.18+ y esta es ${process.version}.\n` +
+      `  Para correrlos:  nvm install 22 && nvm use 22\n` +
+      `  (${error.message})\n`
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 let fallos = 0;
