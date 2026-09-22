@@ -1084,6 +1084,50 @@ textarea:focus-visible {
   gap: 0.4rem;
 }
 
+.galeria-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.compartir-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.compartir-rutinas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.compartir-rutinas .casilla {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radio);
+  color: var(--ink);
+}
+
+.compartir-rutinas .casilla:hover {
+  background: var(--surface-2);
+}
+
+/* El nombre empuja la duración al borde derecho. */
+.compartir-rutina-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .compartir-recientes {
   display: flex;
   flex-wrap: wrap;

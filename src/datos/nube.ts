@@ -203,6 +203,31 @@ export async function compartirRutina(
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Varias rutinas con la misma persona, en un solo viaje.
+ *
+ * `upsert` con un arreglo manda las N filas en una sola consulta: compartir
+ * diez rutinas es un pedido, no diez. Y como la clave primaria es
+ * (usuario_id, rutina_id, destinatario_email), repetir una que ya estaba
+ * compartida no rompe ni duplica — se pisa con lo mismo.
+ */
+export async function compartirRutinas(
+  usuarioId: string,
+  rutinaIds: string[],
+  mail: string
+): Promise<void> {
+  if (!supabase || !rutinaIds.length) return;
+  const destinatario = normalizarMail(mail);
+  const { error } = await supabase.from("rutinas_compartidas").upsert(
+    rutinaIds.map((rutina_id) => ({
+      usuario_id: usuarioId,
+      rutina_id,
+      destinatario_email: destinatario,
+    }))
+  );
+  if (error) throw new Error(error.message);
+}
+
 export async function dejarDeCompartir(
   usuarioId: string,
   rutinaId: string,

@@ -12,6 +12,8 @@ type Props = {
   indice: Map<string, Ejercicio>;
   onSeleccionar: (id: string) => void;
   onNueva: () => void;
+  /** Sólo con sesión iniciada: compartir varias rutinas de una vez. */
+  onCompartirVarias?: () => void;
 };
 
 /**
@@ -21,7 +23,15 @@ type Props = {
  * texto: una grilla que se recorre de un vistazo, con la duración al lado del
  * nombre porque es lo que decide cuál elegís un martes a la mañana.
  */
-export function ListaRutinas({ rutinas, comunidad, compartidas, indice, onSeleccionar, onNueva }: Props) {
+export function ListaRutinas({
+  rutinas,
+  comunidad,
+  compartidas,
+  indice,
+  onSeleccionar,
+  onNueva,
+  onCompartirVarias,
+}: Props) {
   const catalogo = rutinas.filter((r) => !r.propia);
   const propias = rutinas.filter((r) => r.propia);
 
@@ -60,9 +70,16 @@ export function ListaRutinas({ rutinas, comunidad, compartidas, indice, onSelecc
       <section className="galeria" aria-labelledby="titulo-mias">
         <div className="galeria-cabeza">
           <h2 id="titulo-mias">Mis rutinas</h2>
-          <button className="boton chico" onClick={onNueva}>
-            + Nueva rutina
-          </button>
+          <div className="galeria-acciones">
+            {onCompartirVarias && propias.length > 0 && (
+              <button className="boton chico" onClick={onCompartirVarias}>
+                Compartir varias
+              </button>
+            )}
+            <button className="boton chico" onClick={onNueva}>
+              + Nueva rutina
+            </button>
+          </div>
         </div>
 
         {propias.length ? (

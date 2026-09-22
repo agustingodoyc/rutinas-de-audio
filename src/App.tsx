@@ -21,6 +21,7 @@ import { useCompartidas } from "./datos/useCompartidas";
 import { Sugerencias } from "./componentes/Sugerencias";
 import { PanelCompartir } from "./componentes/PanelCompartir";
 import { Modal } from "./componentes/Modal";
+import { PanelCompartirVarias } from "./componentes/PanelCompartirVarias";
 
 type Modo = { tipo: "ver" } | { tipo: "editar" } | { tipo: "nueva" };
 
@@ -48,6 +49,7 @@ export default function App() {
   const [seleccionada, setSeleccionada] = useState("");
   const [modo, setModo] = useState<Modo>({ tipo: "ver" });
   const [compartiendo, setCompartiendo] = useState(false);
+  const [compartiendoVarias, setCompartiendoVarias] = useState(false);
 
   /* Un solo índice para resolver cualquier rutina: los ejercicios del catálogo,
      los propios y los que vienen con las rutinas publicadas. */
@@ -293,7 +295,25 @@ export default function App() {
               indice={indice}
               onSeleccionar={elegir}
               onNueva={() => setModo({ tipo: "nueva" })}
+              onCompartirVarias={
+                sesion.session ? () => setCompartiendoVarias(true) : undefined
+              }
             />
+
+            {sesion.session && (
+              <Modal
+                abierto={compartiendoVarias}
+                titulo="Compartir varias rutinas"
+                onCerrar={() => setCompartiendoVarias(false)}
+              >
+                <PanelCompartirVarias
+                  usuarioId={sesion.session.user.id}
+                  rutinas={bib.rutinasPropias}
+                  indice={indice}
+                  onListo={() => void compartidas.recargar()}
+                />
+              </Modal>
+            )}
 
             <div className="datos-abajo">
               <BarraDatos
