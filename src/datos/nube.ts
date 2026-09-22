@@ -38,6 +38,19 @@ type FilaPaso = {
   seg: number;
 };
 
+/**
+ * Postgrest contesta esto cuando la tabla no existe todavía: el código está
+ * desplegado pero la migración no se corrió en la base.
+ *
+ * Merece un trato aparte porque no es un error de quien usa la página: es de
+ * despliegue. Mostrarle a un visitante un cartel rojo con el nombre de una
+ * tabla interna no lo ayuda en nada y hace ver la app rota. La función que
+ * dependía de esa tabla se comporta como si no hubiera datos, y el detalle va
+ * a la consola, que es donde lo va a buscar quien puede arreglarlo.
+ */
+export const esTablaFaltante = (e: unknown) =>
+  /schema cache|does not exist|PGRST205/i.test(e instanceof Error ? e.message : String(e));
+
 const aMs = (iso: string) => Date.parse(iso) || 0;
 const aIso = (ms?: number) => new Date(ms ?? Date.now()).toISOString();
 
@@ -221,6 +234,36 @@ export async function listarComparticiones(
 }
 
 /**
+ * Las direcciones con las que ya compartiste alguna rutina.
+ *
+ * Es el reemplazo barato de una lista de amigos. Un sistema de amistades
+ * —solicitudes, aceptar, rechazar, bloquear, estados intermedios— es la
+ * función más grande que tendría esta app, y a cambio ahorra escribir un mail.
+ * Esta consulta ahorra lo mismo sin una tabla nueva ni un concepto nuevo: la
+ * información ya está, es con quién compartiste antes.
+ */
+export async function destinatariosRecientes(usuarioId: string): Promise<string[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("rutinas_compartidas")
+    .select("destinatario_email, creado_en")
+    .eq("usuario_id", usuarioId)
+    .order("creado_en", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+
+  /* Distinct del lado del cliente: son pocas filas y PostgREST no tiene un
+     `select distinct` directo. El orden por fecha se conserva, así que las
+     direcciones más recientes quedan primero. */
+  const vistas = new Set<string>();
+  for (const f of (data ?? []) as { destinatario_email: string }[]) {
+    vistas.add(f.destinatario_email);
+    if (vistas.size >= 8) break;
+  }
+  return [...vistas];
+}
+
+/**
  * Lo que otras personas compartieron conmigo.
  *
  * No se guarda en IndexedDB y no es casual: no es mía. Si se copiara al
@@ -339,7 +382,17 @@ export async function enviarSugerencia(texto: string, contacto: string): Promise
     contacto: contacto.trim(),
     usuario_id: data.session?.user.id ?? null,
   });
-  if (error) throw new Error(error.message);
+
+  if (error) {
+    /* El nombre de una tabla que falta no le dice nada a quien quería dejar un
+       mensaje. Se le avisa que no se pudo, y el detalle queda en la consola
+       para quien tenga que correr la migración. */
+    if (esTablaFaltante(error)) {
+      console.error("Falta la tabla `sugerencias`: correr supabase/migracion-02.", error);
+      throw new Error("El buzón todavía no está habilitado. Probá más tarde.");
+    }
+    throw new Error(error.message);
+  }
 }
 
 export async function bajarRutinasPublicas(): Promise<{

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Ejercicio, Rutina } from "../tipos";
-import { bajarCompartidasConmigo } from "./nube";
+import { bajarCompartidasConmigo, esTablaFaltante } from "./nube";
 import { haySupabase } from "./supabase";
 
 /**
@@ -35,7 +35,17 @@ export function useCompartidas(mail: string | null) {
       setEjercicios(datos.ejercicios);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pude traer las rutinas compartidas con vos.");
+      /* Sin la tabla no hay nada compartido que mostrar, que es un estado
+         perfectamente válido de la app. El cartel rojo arriba de la página
+         sería ruido para el visitante y no arregla nada. */
+      if (esTablaFaltante(e)) {
+        console.error("Falta la tabla `rutinas_compartidas`: correr supabase/migracion-02.", e);
+        setRutinas([]);
+        setEjercicios([]);
+        setError("");
+      } else {
+        setError(e instanceof Error ? e.message : "No pude traer las rutinas compartidas con vos.");
+      }
     } finally {
       setCargando(false);
     }

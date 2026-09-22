@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { compartirRutina, dejarDeCompartir, listarComparticiones, normalizarMail } from "../datos/nube";
+import {
+  compartirRutina,
+  dejarDeCompartir,
+  destinatariosRecientes,
+  esTablaFaltante,
+  listarComparticiones,
+  normalizarMail,
+} from "../datos/nube";
 
 type Props = {
   usuarioId: string;
@@ -27,15 +34,22 @@ const pareceMail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
  */
 export function PanelCompartir({ usuarioId, rutinaId, propios }: Props) {
   const [mails, setMails] = useState<string[]>([]);
+  const [recientes, setRecientes] = useState<string[]>([]);
   const [nuevo, setNuevo] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
 
   const cargar = useCallback(async () => {
     try {
-      setMails(await listarComparticiones(usuarioId, rutinaId));
+      const [actuales, previos] = await Promise.all([
+        listarComparticiones(usuarioId, rutinaId),
+        destinatariosRecientes(usuarioId),
+      ]);
+      setMails(actuales);
+      setRecientes(previos);
       setError("");
     } catch (e) {
+      if (esTablaFaltante(e)) return; // falta la migración; ya se avisa en consola
       setError(e instanceof Error ? e.message : "No pude leer con quién está compartida.");
     }
   }, [usuarioId, rutinaId]);
@@ -44,8 +58,8 @@ export function PanelCompartir({ usuarioId, rutinaId, propios }: Props) {
     void cargar();
   }, [cargar]);
 
-  const agregar = async () => {
-    const mail = normalizarMail(nuevo);
+  const agregar = async (desde?: string) => {
+    const mail = normalizarMail(desde ?? nuevo);
     if (!pareceMail(mail)) return setError("Escribí un mail válido.");
     if (mails.includes(mail)) return setError("Ya está compartida con esa dirección.");
 
@@ -53,6 +67,7 @@ export function PanelCompartir({ usuarioId, rutinaId, propios }: Props) {
     try {
       await compartirRutina(usuarioId, rutinaId, mail);
       setMails((prev) => [...prev, mail]);
+      setRecientes((prev) => [mail, ...prev.filter((m) => m !== mail)].slice(0, 8));
       setNuevo("");
       setError("");
     } catch (e) {
@@ -96,6 +111,26 @@ export function PanelCompartir({ usuarioId, rutinaId, propios }: Props) {
           Compartir
         </button>
       </div>
+
+      {/* Con quién compartiste antes. No es una lista de amigos: es la misma
+          información que ya está en la base, puesta a un clic de distancia. */}
+      {recientes.filter((m) => !mails.includes(m)).length > 0 && (
+        <div className="compartir-recientes">
+          <span className="apunte">Antes compartiste con:</span>
+          {recientes
+            .filter((m) => !mails.includes(m))
+            .map((m) => (
+              <button
+                key={m}
+                className="boton chico fantasma"
+                disabled={ocupado}
+                onClick={() => void agregar(m)}
+              >
+                {m}
+              </button>
+            ))}
+        </div>
+      )}
 
       {mails.length > 0 && (
         <ul className="compartir-lista">

@@ -825,6 +825,7 @@ textarea:focus-visible {
   max-width: 52ch;
 }
 
+.portada-acciones .boton,
 .portada-editar {
   margin-left: auto;
   flex: none;
@@ -834,9 +835,17 @@ textarea:focus-visible {
   backdrop-filter: blur(4px);
 }
 
+.portada-acciones .boton:hover:not(:disabled),
 .portada-editar:hover:not(:disabled) {
   background: rgb(255 255 255 / 24%);
   border-color: #fff;
+}
+
+/* El de compartir, cuando el panel está abierto. */
+.portada-acciones .boton.activo {
+  background: #fff;
+  border-color: #fff;
+  color: var(--ink);
 }
 
 .detalle-datos {
@@ -1010,6 +1019,22 @@ textarea:focus-visible {
   gap: 0.6rem;
   padding: 0.9rem 0;
   border-top: 1px solid var(--line);
+}
+
+/* Las acciones de la portada. La portada ya es flex con los ítems abajo, así
+   que alcanza con empujarlas a la derecha como hacía el botón de editar. */
+.portada-acciones {
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.compartir-recientes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .compartir-alta {

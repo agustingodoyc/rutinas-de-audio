@@ -12,9 +12,20 @@ type Props = {
   onEditar?: () => void;
   /** Sólo en las rutinas ajenas —catálogo o comunidad—: traerla a la propia. */
   onCopiar?: () => void;
+  /** Sólo en las tuyas y con sesión: abrir o cerrar el panel de compartir. */
+  onCompartir?: () => void;
+  compartiendo?: boolean;
 };
 
-export function DetalleRutina({ rutina, items, enCurso, onEditar, onCopiar }: Props) {
+export function DetalleRutina({
+  rutina,
+  items,
+  enCurso,
+  onEditar,
+  onCopiar,
+  onCompartir,
+  compartiendo,
+}: Props) {
   const color = grupoDominante(items.map((e) => e.grupo));
   const portada = items[0];
 
@@ -40,10 +51,26 @@ export function DetalleRutina({ rutina, items, enCurso, onEditar, onCopiar }: Pr
           {rutina.descripcion && <p>{rutina.descripcion}</p>}
         </div>
 
-        {onEditar && (
-          <button className="boton chico portada-editar" onClick={onEditar}>
-            Editar
-          </button>
+        {/* Compartir y editar son intenciones distintas —«se la quiero pasar a
+            alguien» no es «le quiero cambiar algo»—, así que compartir dejó de
+            vivir adentro del editor y está acá, donde se mira la rutina. */}
+        {(onEditar || onCompartir) && (
+          <div className="portada-acciones">
+            {onCompartir && (
+              <button
+                className={`boton chico${compartiendo ? " activo" : ""}`}
+                aria-expanded={Boolean(compartiendo)}
+                onClick={onCompartir}
+              >
+                Compartir
+              </button>
+            )}
+            {onEditar && (
+              <button className="boton chico" onClick={onEditar}>
+                Editar
+              </button>
+            )}
+          </div>
         )}
 
         {onCopiar && (

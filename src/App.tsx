@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Ejercicio, Rutina } from "./tipos";
-import { idEjercicioPropio, idRutinaPropia, resolver, slug } from "./datos/catalogo";
+import { esEjercicioPropio, idEjercicioPropio, idRutinaPropia, resolver, slug } from "./datos/catalogo";
 import { useBiblioteca } from "./datos/useBiblioteca";
 import { useGenerador } from "./audio/useGenerador";
 import { BarraSuperior } from "./componentes/BarraSuperior";
@@ -19,6 +19,7 @@ import { primeraOracion, separarInstrucciones } from "./datos/texto";
 import { esCompartidaConmigo, esDeLaComunidad } from "./datos/nube";
 import { useCompartidas } from "./datos/useCompartidas";
 import { Sugerencias } from "./componentes/Sugerencias";
+import { PanelCompartir } from "./componentes/PanelCompartir";
 
 type Modo = { tipo: "ver" } | { tipo: "editar" } | { tipo: "nueva" };
 
@@ -45,6 +46,7 @@ export default function App() {
 
   const [seleccionada, setSeleccionada] = useState("");
   const [modo, setModo] = useState<Modo>({ tipo: "ver" });
+  const [compartiendo, setCompartiendo] = useState(false);
 
   /* Un solo índice para resolver cualquier rutina: los ejercicios del catálogo,
      los propios y los que vienen con las rutinas publicadas. */
@@ -68,6 +70,13 @@ export default function App() {
   /* La frase con la que se prueba una velocidad sale del primer ejercicio de
      la rutina que está abierta, no de un texto de ejemplo: se escucha lo que
      se va a escuchar, con esas palabras y ese largo. */
+  /* Los ejercicios tuyos que la rutina abierta usa: es el texto que compartir
+     pondría a la vista de otra persona. */
+  const propiosEnRutina = useMemo(
+    () => [...new Set(items.filter((e) => esEjercicioPropio(e.id)).map((e) => e.nombre))],
+    [items]
+  );
+
   const textoMuestra = useMemo(() => {
     const primero = items[0];
     if (!primero) return "";
@@ -77,12 +86,14 @@ export default function App() {
   const elegir = (id: string) => {
     setSeleccionada(id);
     setModo({ tipo: "ver" });
+    setCompartiendo(false);
     gen.limpiarResultado();
   };
 
   const volver = () => {
     setSeleccionada("");
     setModo({ tipo: "ver" });
+    setCompartiendo(false);
     gen.limpiarResultado();
   };
 
@@ -183,7 +194,6 @@ export default function App() {
                 onCancelar={() => (modo.tipo === "nueva" ? volver() : setModo({ tipo: "ver" }))}
                 onGuardarEjercicio={bib.guardarEjercicio}
                 puedePublicar={Boolean(sesion.session)}
-                usuarioId={sesion.session?.user.id ?? null}
               />
             ) : rutina ? (
               <div className="rutina">
@@ -201,7 +211,23 @@ export default function App() {
                         ? () => void copiarAMisRutinas(rutina)
                         : undefined
                     }
+                    /* Sólo tus rutinas se pueden compartir, y hace falta sesión
+                       para que la base sepa de quién es el permiso. */
+                    onCompartir={
+                      rutina.propia && sesion.session
+                        ? () => setCompartiendo((x) => !x)
+                        : undefined
+                    }
+                    compartiendo={compartiendo}
                   />
+
+                  {compartiendo && rutina.propia && sesion.session && (
+                    <PanelCompartir
+                      usuarioId={sesion.session.user.id}
+                      rutinaId={rutina.id}
+                      propios={propiosEnRutina}
+                    />
+                  )}
                 </div>
 
                 <aside className="rutina-lateral">
