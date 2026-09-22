@@ -20,6 +20,7 @@ import { esCompartidaConmigo, esDeLaComunidad } from "./datos/nube";
 import { useCompartidas } from "./datos/useCompartidas";
 import { Sugerencias } from "./componentes/Sugerencias";
 import { PanelCompartir } from "./componentes/PanelCompartir";
+import { Modal } from "./componentes/Modal";
 
 type Modo = { tipo: "ver" } | { tipo: "editar" } | { tipo: "nueva" };
 
@@ -221,12 +222,22 @@ export default function App() {
                     compartiendo={compartiendo}
                   />
 
-                  {compartiendo && rutina.propia && sesion.session && (
-                    <PanelCompartir
-                      usuarioId={sesion.session.user.id}
-                      rutinaId={rutina.id}
-                      propios={propiosEnRutina}
-                    />
+                  {/* En un modal y no debajo del detalle: ahí abajo quedaba
+                      después de toda la lista de ejercicios, fuera de la
+                      pantalla, y el botón parecía no hacer nada. Lo que un
+                      botón produce tiene que verse sin buscarlo. */}
+                  {rutina.propia && sesion.session && (
+                    <Modal
+                      abierto={compartiendo}
+                      titulo={`Compartir «${rutina.nombre}»`}
+                      onCerrar={() => setCompartiendo(false)}
+                    >
+                      <PanelCompartir
+                        usuarioId={sesion.session.user.id}
+                        rutinaId={rutina.id}
+                        propios={propiosEnRutina}
+                      />
+                    </Modal>
                   )}
                 </div>
 

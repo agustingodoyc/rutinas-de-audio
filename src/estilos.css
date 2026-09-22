@@ -1021,6 +1021,60 @@ textarea:focus-visible {
   border-top: 1px solid var(--line);
 }
 
+/* ── Ventana modal ── */
+
+.modal {
+  /* El <dialog> nativo trae borde, fondo y padding propios; se los saca para
+     que la caja de adentro mande. */
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: min(32rem, calc(100vw - 2rem));
+  width: 100%;
+  color: var(--ink);
+}
+
+.modal::backdrop {
+  background: rgb(9 11 15 / 62%);
+  backdrop-filter: blur(2px);
+}
+
+.modal-caja {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radio) * 2);
+  box-shadow: var(--sombra);
+  overflow: hidden;
+}
+
+.modal-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0.9rem 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-cabeza h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.modal-cuerpo {
+  padding: 0.4rem 1.1rem 1.1rem;
+  max-height: min(70vh, 34rem);
+  overflow-y: auto;
+}
+
+/* Adentro del modal, el panel ya no necesita su línea divisoria de arriba:
+   la cabecera de la ventana cumple esa función. */
+.modal-cuerpo .compartir {
+  border-top: 0;
+  padding-top: 0;
+}
+
 /* Las acciones de la portada. La portada ya es flex con los ítems abajo, así
    que alcanza con empujarlas a la derecha como hacía el botón de editar. */
 .portada-acciones {
