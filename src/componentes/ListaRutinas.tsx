@@ -7,6 +7,8 @@ type Props = {
   rutinas: Rutina[];
   /** Las que publicó el resto de la gente. */
   comunidad: Rutina[];
+  /** Las que alguien compartió con vos en particular. */
+  compartidas: Rutina[];
   indice: Map<string, Ejercicio>;
   onSeleccionar: (id: string) => void;
   onNueva: () => void;
@@ -19,7 +21,7 @@ type Props = {
  * texto: una grilla que se recorre de un vistazo, con la duración al lado del
  * nombre porque es lo que decide cuál elegís un martes a la mañana.
  */
-export function ListaRutinas({ rutinas, comunidad, indice, onSeleccionar, onNueva }: Props) {
+export function ListaRutinas({ rutinas, comunidad, compartidas, indice, onSeleccionar, onNueva }: Props) {
   const catalogo = rutinas.filter((r) => !r.propia);
   const propias = rutinas.filter((r) => r.propia);
 
@@ -71,6 +73,18 @@ export function ListaRutinas({ rutinas, comunidad, indice, onSeleccionar, onNuev
           </p>
         )}
       </section>
+
+      {compartidas.length > 0 && (
+        <section className="galeria" aria-labelledby="titulo-compartidas">
+          <div className="galeria-cabeza">
+            <h2 id="titulo-compartidas">Compartidas conmigo</h2>
+            <p className="apunte">
+              De sólo lectura. Si quien la compartió la borra, desaparece de acá.
+            </p>
+          </div>
+          <ul className="grilla">{compartidas.map(tarjeta)}</ul>
+        </section>
+      )}
 
       {comunidad.length > 0 && (
         <section className="galeria" aria-labelledby="titulo-comunidad">

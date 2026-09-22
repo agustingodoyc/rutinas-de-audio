@@ -318,6 +318,52 @@ apunta a Supabase, no a la app. Lo que sí hay que hacer es **publicar la
 pantalla de consentimiento** (*Audience → Publish app*); mientras esté en
 `Testing` sólo entran los mails cargados como test users.
 
+## Compartir una rutina
+
+Una rutina se puede compartir con una persona concreta, por mail, desde el editor. Es de **sólo lectura**: la escucha y genera su audio, no la edita ni la copia.
+
+Lo interesante es que **compartir no copia nada**. La rutina sigue siendo una sola fila, del dueño, y lo único que se agrega es permiso de lectura para un mail:
+
+```sql
+create policy "rutinas compartidas conmigo" on public.rutinas
+  for select using (
+    not borrado
+    and exists (
+      select 1 from public.rutinas_compartidas c
+      where c.usuario_id = rutinas.usuario_id
+        and c.rutina_id = rutinas.id
+        and c.destinatario_email = lower(auth.jwt() ->> 'email')
+    )
+  );
+```
+
+De ahí sale gratis el requisito que la motivó: si el dueño la borra, al otro le desaparece. No hay ningún mecanismo que vaya a buscar copias por ahí para borrarlas, **porque nunca hubo una segunda copia**. El borrado deja una lápida (`borrado = true`), la política pide `not borrado`, y la fila deja de ser legible. Lo mismo con un ejercicio suelto: desaparece de la rutina del otro, que se genera igual salteándolo.
+
+Por eso lo compartido tampoco se guarda en IndexedDB. Una copia local sobreviviría al borrado del dueño, que es justo lo contrario de lo prometido.
+
+El destinatario se identifica por **mail y no por id de usuario**, por dos motivos. `auth.users` no se puede leer desde el cliente, así que la app no podría traducir un mail a un id antes de guardar. Y se puede compartir con alguien que todavía no tiene cuenta: el permiso queda esperando y se activa el día que entre con ese mail.
+
+> Si tu biblioteca tiene ejercicios importados de otra aplicación, compartirlos es redistribuir su texto igual que publicarlos. El editor te muestra en rojo qué textos tuyos van a quedar a la vista antes de que compartas.
+
+## Sugerencias sin publicar un mail
+
+Hay un buzón al final de la página. El requisito era recibir mensajes **sin publicar ninguna dirección de contacto**: ni en la pantalla ni en el código, que es público y los bots recorren buscando exactamente eso. Eso descarta `mailto:` y los links de WhatsApp.
+
+La solución es una tabla donde cualquiera puede escribir y **nadie puede leer**:
+
+```sql
+alter table public.sugerencias enable row level security;
+
+create policy "cualquiera puede sugerir" on public.sugerencias
+  for insert with check (true);
+
+-- Y ninguna política de select.
+```
+
+En Postgres con RLS encendido, lo que no está permitido está prohibido: la ausencia de política de `select` es la protección. Ni la anon key —que viaja en el JavaScript— ni una sesión iniciada pueden traer una sola fila. Los mensajes se leen desde el panel de Supabase, que entra con la service role key y nunca toca el navegador.
+
+Contra el spam hay lo que se puede hacer sin servidor: límites de longitud en la base, un campo trampa invisible que una persona nunca completa, y un minuto de espera entre envíos guardado en el navegador. Lo último no es una defensa real —quien quiera saltearla la saltea— pero cubre el caso que de verdad ocurre, que es el doble clic.
+
 ## El catálogo
 
 Los ejercicios y sus instrucciones están escritos para este proyecto: no provienen de ninguna aplicación de terceros. Para ampliarlo hay fuentes abiertas — [free-exercise-db](https://yuhonas.github.io/free-exercise-db/) es dominio público (~800 ejercicios, en inglés) y [wger](https://github.com/wger-project/wger) tiene licencia abierta con atribución.

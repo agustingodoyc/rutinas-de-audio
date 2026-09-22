@@ -16,7 +16,9 @@ import { useEjemplos } from "./datos/useEjemplos";
 import { useSesion } from "./datos/useSesion";
 import { useComunidad } from "./datos/useComunidad";
 import { primeraOracion, separarInstrucciones } from "./datos/texto";
-import { esDeLaComunidad } from "./datos/nube";
+import { esCompartidaConmigo, esDeLaComunidad } from "./datos/nube";
+import { useCompartidas } from "./datos/useCompartidas";
+import { Sugerencias } from "./componentes/Sugerencias";
 
 type Modo = { tipo: "ver" } | { tipo: "editar" } | { tipo: "nueva" };
 
@@ -37,6 +39,9 @@ export default function App() {
   const gen = useGenerador();
   const ejemplos = useEjemplos();
   const comunidad = useComunidad();
+  /* Lo compartido conmigo se pide por mail: compartir es con alguien en
+     particular, y sin sesión no hay a quién identificar. */
+  const compartidas = useCompartidas(sesion.session?.user.email ?? null);
 
   const [seleccionada, setSeleccionada] = useState("");
   const [modo, setModo] = useState<Modo>({ tipo: "ver" });
@@ -44,13 +49,13 @@ export default function App() {
   /* Un solo índice para resolver cualquier rutina: los ejercicios del catálogo,
      los propios y los que vienen con las rutinas publicadas. */
   const indice = useMemo(
-    () => new Map<string, Ejercicio>([...bib.indice, ...comunidad.indice]),
-    [bib.indice, comunidad.indice]
+    () => new Map<string, Ejercicio>([...bib.indice, ...comunidad.indice, ...compartidas.indice]),
+    [bib.indice, comunidad.indice, compartidas.indice]
   );
 
   const todas = useMemo(
-    () => [...bib.rutinas, ...comunidad.rutinas],
-    [bib.rutinas, comunidad.rutinas]
+    () => [...bib.rutinas, ...comunidad.rutinas, ...compartidas.rutinas],
+    [bib.rutinas, comunidad.rutinas, compartidas.rutinas]
   );
 
   const rutina: Rutina | undefined = useMemo(
@@ -152,6 +157,7 @@ export default function App() {
       )}
       {bib.error && <p className="error">{bib.error}</p>}
       {comunidad.error && <p className="error">{comunidad.error}</p>}
+      {compartidas.error && <p className="error">{compartidas.error}</p>}
     </>
   );
 
@@ -177,6 +183,7 @@ export default function App() {
                 onCancelar={() => (modo.tipo === "nueva" ? volver() : setModo({ tipo: "ver" }))}
                 onGuardarEjercicio={bib.guardarEjercicio}
                 puedePublicar={Boolean(sesion.session)}
+                usuarioId={sesion.session?.user.id ?? null}
               />
             ) : rutina ? (
               <div className="rutina">
@@ -186,7 +193,14 @@ export default function App() {
                     items={items}
                     enCurso={gen.progreso?.nombre}
                     onEditar={rutina.propia ? () => setModo({ tipo: "editar" }) : undefined}
-                    onCopiar={!rutina.propia ? () => void copiarAMisRutinas(rutina) : undefined}
+                    /* Una rutina compartida no se copia: copiarla crearía una
+                       versión que sobrevive al borrado del dueño, que es justo
+                       lo contrario de lo que promete la función. */
+                    onCopiar={
+                      !rutina.propia && !esCompartidaConmigo(rutina.id)
+                        ? () => void copiarAMisRutinas(rutina)
+                        : undefined
+                    }
                   />
                 </div>
 
@@ -238,6 +252,7 @@ export default function App() {
             <ListaRutinas
               rutinas={bib.rutinas}
               comunidad={comunidad.rutinas}
+              compartidas={compartidas.rutinas}
               indice={indice}
               onSeleccionar={elegir}
               onNueva={() => setModo({ tipo: "nueva" })}
@@ -257,6 +272,8 @@ export default function App() {
                 onGuardar={bib.guardarEjercicio}
                 onBorrar={bib.borrarEjercicio}
               />
+
+              <Sugerencias />
             </div>
           </main>
         )}

@@ -9,6 +9,7 @@ import {
   resolver,
 } from "../datos/catalogo";
 import { FormularioEjercicio } from "./FormularioEjercicio";
+import { PanelCompartir } from "./PanelCompartir";
 
 type Props = {
   rutina: Rutina | null; // null = rutina nueva
@@ -19,6 +20,8 @@ type Props = {
   onGuardarEjercicio: (ejercicio: Ejercicio) => void;
   /** false sin sesión: una rutina pública necesita un dueño en la base. */
   puedePublicar: boolean;
+  /** id de quien tiene la sesión abierta, o null. Hace falta para compartir. */
+  usuarioId: string | null;
 };
 
 const SEGUNDOS_POR_DEFECTO = 30;
@@ -31,6 +34,7 @@ export function EditorRutina({
   onCancelar,
   onGuardarEjercicio,
   puedePublicar,
+  usuarioId,
 }: Props) {
   const [nombre, setNombre] = useState(rutina?.nombre ?? "");
   const [descripcion, setDescripcion] = useState(rutina?.descripcion ?? "");
@@ -191,6 +195,17 @@ export function EditorRutina({
               lado. Una rutina hecha sólo con ellos publica la secuencia y nada más.
             </p>
           </div>
+        )}
+
+        {/* Compartir necesita que la rutina exista en la base, así que aparece
+            recién cuando se está editando una ya guardada. En una nueva, el id
+            todavía no existe del otro lado. */}
+        {rutina && usuarioId && (
+          <PanelCompartir
+            usuarioId={usuarioId}
+            rutinaId={rutina.id}
+            propios={propiosAPublicar.map((e) => e.nombre)}
+          />
         )}
 
         {items.length > 0 && (
